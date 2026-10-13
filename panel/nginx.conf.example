@@ -1,0 +1,12 @@
+# 放到 /etc/nginx/sites-available/tg-jianc 后 ln -s 到 sites-enabled
+server {
+    listen 80;
+    server_name _;
+    root /opt/tg-jianc;
+    location /api/ {
+        proxy_pass http://127.0.0.1:8903;
+        proxy_set_header Host $host;
+        proxy_read_timeout 120s;
+    }
+    location / { try_files $uri $uri/ /index.html; }
+}

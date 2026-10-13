@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.log
+sessions/
+*.session
+*.session-journal
+check_job_state.json
+check_history.json
+bot_cooldown.json
+bot_daily_stats.json
+bot_flood.json
+frozen_bots.json
+rr_state.json
+export_available.txt

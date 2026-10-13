@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG用户名检测工具 - 管理面板</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%232AABEE'/%3E%3Cstop offset='100%25' style='stop-color:%23229ED9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23g)'/%3E%3Cpath d='M25 50l7-7 12 12 24-24 7 7-31 31z' fill='white'/%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2AABEE;
+            --primary-dark: #229ED9;
+            --success: #4CAF50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --bg: #0f1923;
+            --bg-card: #1a2733;
+            --bg-input: #243442;
+            --text: #e8eaed;
+            --text-secondary: #8b9dab;
+            --border: #2d3f4f;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { text-align: center; padding: 30px 0 20px; }
+        .logo {
+            width: 70px; height: 70px; margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 18px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 32px rgba(42, 171, 238, 0.3);
+        }
+        .logo svg { width: 42px; height: 42px; }
+        .header h1 {
+            font-size: 24px; font-weight: 700; margin-bottom: 6px;
+            background: linear-gradient(135deg, var(--primary), #64d2ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .header .subtitle { color: var(--text-secondary); font-size: 13px; letter-spacing: 2px; }
+
+        /* Login */
+        .login-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box {
+            background: var(--bg-card); border-radius: 16px; padding: 40px;
+            border: 1px solid var(--border); width: 400px; max-width: 90%;
+            text-align: center;
+        }
+        .login-box h2 { margin-bottom: 24px; color: var(--primary); }
+        .login-box input {
+            width: 100%; padding: 12px 16px; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text); font-size: 14px; margin-bottom: 16px;
+        }
+        .login-box input:focus { outline: none; border-color: var(--primary); }
+        .login-box .btn { width: 100%; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; background: var(--bg-card);
+            border-radius: 12px; padding: 4px; margin-bottom: 24px;
+            border: 1px solid var(--border); overflow-x: auto;
+        }
+        .tab {
+            flex: 1; padding: 12px 16px; text-align: center; border-radius: 8px;
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            color: var(--text-secondary); transition: all 0.3s; white-space: nowrap;
+        }
+        .tab.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(42, 171, 238, 0.3); }
+        .tab:hover:not(.active) { color: var(--text); background: var(--bg-input); }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card); border-radius: 16px; padding: 24px;
+            margin-bottom: 24px; border: 1px solid var(--border);
+        }
+        .card h3 { font-size: 16px; margin-bottom: 16px; color: var(--primary); }
+
+        /* Stats Grid */
+        .stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card); border-radius: 12px; padding: 16px;
+            text-align: center; border: 1px solid var(--border);
+        }
+        .stat-card .number { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+        .stat-card .label { font-size: 12px; color: var(--text-secondary); }
+        .stat-card.total .number { color: var(--primary); }
+        .stat-card.running .number { color: var(--success); }
+        .stat-card.stopped .number { color: var(--danger); }
+        .stat-card.sent .number { color: var(--warning); }
+
+        /* Bot List */
+        .bot-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+        .bot-card {
+            background: var(--bg-input); border-radius: 12px; padding: 16px;
+            border: 1px solid var(--border); transition: all 0.3s;
+        }
+        .bot-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .bot-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .bot-card-header h4 { font-size: 14px; font-weight: 600; }
+        .bot-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
+        }
+        .bot-status.running { background: rgba(76,175,80,0.15); color: #4CAF50; }
+        .bot-status.stopped { background: rgba(244,67,54,0.15); color: #f44336; }
+        .bot-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .bot-card-info { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+        .bot-card-info p { margin-bottom: 4px; }
+        .bot-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .bot-card-actions .btn { padding: 6px 12px; font-size: 12px; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
+        }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .form-group { flex: 1; }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px; border-radius: 10px; border: none;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 4px 12px rgba(42,171,238,0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(42,171,238,0.4); }
+        .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* Tab Content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Username Check */
+        .file-upload {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 30px;
+            text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 16px;
+        }
+        .file-upload:hover { border-color: var(--primary); background: rgba(42,171,238,0.05); }
+        .file-upload svg { width: 48px; height: 48px; margin-bottom: 12px; color: var(--primary); }
+        .file-upload p { color: var(--text-secondary); font-size: 14px; }
+        .file-upload .hint { font-size: 12px; margin-top: 8px; opacity: 0.7; }
+
+        /* Results Table */
+        .table-wrapper { overflow-x: auto; }
+        .results-table { width: 100%; border-collapse: collapse; }
+        .results-table th {
+            text-align: left; padding: 12px 16px; font-size: 12px;
+            color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid var(--border);
+        }
+        .results-table td { padding: 10px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+        .results-table tr:hover td { background: rgba(42,171,238,0.03); }
+
+        /* Check Results */
+        .check-results { margin-top: 16px; }
+        .check-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; border-bottom: 1px solid var(--border);
+        }
+        .check-item:last-child { border-bottom: none; }
+        .check-ok { color: var(--success); }
+        .check-warn { color: var(--warning); }
+        .check-err { color: var(--danger); }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; padding: 12px 20px;
+            border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text); font-size: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 999; display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--bg-card); border-radius: 16px; padding: 32px;
+            border: 1px solid var(--border); width: 500px; max-width: 90%;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal h3 { margin-bottom: 20px; color: var(--primary); }
+        .modal-actions { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
+
+        /* Progress */
+        .progress-bar { width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; display: none; margin-bottom: 16px; }
+        .progress-bar.active { display: block; }
+        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); border-radius: 3px; transition: width 0.3s; width: 0%; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .bot-grid { grid-template-columns: 1fr; }
+            .form-row { flex-direction: column; gap: 0; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .tab { padding: 10px 12px; font-size: 12px; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .hidden { display: none !important; }
+        .loading { opacity: 0.6; pointer-events: none; }
+    </style>
+
+<style id="kw-scope-css">
+.keyword-filter-box { display: none !important; }
+#tab-keyword .keyword-filter-box,
+#tab-keyword [data-kw="1"] { display: block !important; }
+</style>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div class="logo" style="margin:0 auto 20px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </div>
+            <h2>TG 管理面板</h2>
+            <input type="text" id="loginUsername" placeholder="用户名" style="margin-bottom:12px" onkeypress="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+            <input type="password" id="loginPassword" placeholder="密码" onkeypress="if(event.key==='Enter')doLogin()">
+            <button class="btn btn-primary" onclick="doLogin()" style="width:100%;margin-top:12px">登录</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container" id="mainContent" style="display:none">
+        <div class="header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </div>
+            <h1>检测四号机</h1>
+            <p class="subtitle">批量检测 · 水军管理 · 关键词筛选 · 一键导出</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="dashboard">仪表盘</div>
+            <div class="tab" data-tab="bots">水军管理</div>
+            <div class="tab" data-tab="add-bot">增加水军</div>
+            <div class="tab" data-tab="check">批量检测</div>
+            <!-- premium tab removed: use batch check -->
+            <div class="tab" data-tab="pool-api">API资源池</div>
+            <div class="tab" data-tab="pool-ip">IP资源池</div>
+            <div class="tab" data-tab="keyword">关键词筛选</div>
+        </div>
+
+        <!-- Tab: Dashboard -->
+        <div class="tab-content active" id="tab-dashboard">
+            <div class="stats">
+                <div class="stat-card total">
+                    <div class="number" id="statTotal">0</div>
+                    <div class="label">总水军数</div>
+                </div>
+                <div class="stat-card running">
+                    <div class="number" id="statRunning">0</div>
+                    <div class="label">运行中</div>
+                </div>
+                <div class="stat-card stopped">
+                    <div class="number" id="statStopped">0</div>
+                    <div class="label">已停止</div>
+                </div>
+                <div class="stat-card sent">
+                    <div class="number" id="statTodaySent">0</div>
+                    <div class="label">今日发送</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>快速操作</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                    <button class="btn btn-primary" onclick="switchTab('add-bot')">+ 增加水军</button>
+                    <button class="btn btn-success" onclick="checkAllBots()">全部自检</button>
+                    <button class="btn btn-secondary" onclick="refreshStatus()">刷新状态</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>发送统计</h3>
+                <div class="stats" style="margin-bottom:0">
+                    <div class="stat-card"><div class="number" id="statTotalSent" style="color:var(--primary)">0</div><div class="label">累计发送</div></div>
+                    <div class="stat-card"><div class="number" id="statTotalSuccess" style="color:var(--success)">0</div><div class="label">累计成功</div></div>
+                    <div class="stat-card"><div class="number" id="statTotalFailed" style="color:var(--danger)">0</div><div class="label">累计失败</div></div>
+                    <div class="stat-card"><div class="number" id="statTodaySuccess" style="color:var(--success)">0</div><div class="label">今日成功</div></div>
+                </div>
+            </div>
+
+            <div class="card" id="checkResultsCard" style="display:none">
+                <h3>自检结果</h3>
+                <div class="check-results" id="checkResults"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Bot Management -->
+                        <div class="tab-content" id="tab-bots">
+            <!-- 5条固定线路 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                <div style="font-size:13px;color:var(--text-secondary)">左侧选线路 · 右侧操作水军 <span id="botProbeBar"></span></div>
+                <button class="btn btn-warning btn-sm" onclick="probeAllBots()">一键全部检测</button>
+            </div>
+            <div style="display:flex;gap:14px;align-items:stretch;min-height:68vh">
+                <div class="card" style="width:300px;flex:0 0 300px;padding:12px">
+                    <div style="font-weight:600;margin-bottom:8px">线路分组 <span id="lineTotalHint" style="font-weight:400;color:#7dd3fc;font-size:12px"></span></div>
+                    <input id="lineSearch" placeholder="搜索线路 / 号码 / 名称" oninput="filterLineNav()" style="width:100%;margin-bottom:8px">
+                    <div id="lineNav" style="max-height:70vh;overflow:auto"></div>
+                </div>
+                <div class="card" style="flex:1;min-width:0;padding:14px">
+                    <div id="lineWorkArea"><p style="color:var(--text-secondary)">请从左侧选择一条线路</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Add Bot -->
+                        <div class="tab-content" id="tab-add-bot">
+            <div class="card" style="margin-bottom:14px">
+                <div class="form-row">
+                    <div class="form-group"><label>手机号</label><input type="text" id="addBotPhone" placeholder="手机号"></div>
+                    <div class="form-group"><label>备注</label><input type="text" id="addBotName" placeholder="备注"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>API</label><select id="addBotApi"><option value="">自动分配 API</option></select></div>
+                    <div class="form-group"><label>代理线路</label><select id="addBotLine"><option value="">自动分配未满线路</option></select></div>
+                </div>
+                <button class="btn btn-primary" id="sendCodeBtn" onclick="sendCode()">发送验证码</button>
+                <p id="addBotMsg" style="margin-top:8px;font-size:13px;color:#81c784"></p>
+            </div>
+            <div class="card">
+                <div class="form-row">
+                    <div class="form-group"><label>手机号</label><input type="text" id="verifyPhone" placeholder="手机号"></div>
+                    <div class="form-group"><label>验证码</label><input type="text" id="addBotCode" placeholder="验证码"></div>
+                    <div class="form-group"><label>两步密码</label><input type="password" id="addBot2FA" placeholder="两步密码"></div>
+                </div>
+                <button class="btn btn-success" onclick="addBot()">确认登录</button>
+            </div>
+            
+            <div class="card" style="margin-top:14px">
+                <h3 style="margin-bottom:6px">上传 ZIP 批量导入（.session + .json）</h3>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:10px">死号不导入，活号自动分配到未满线路。</p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <input type="file" id="zipFile" accept=".zip,application/zip" style="flex:1;min-width:180px">
+                    <button class="btn btn-primary" type="button" onclick="uploadSessionZip()">上传并导入</button>
+                </div>
+                <div style="margin-top:12px;height:8px;background:#0b1220;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+                    <div id="zipBar" style="height:100%;width:0;background:#3b82f6"></div>
+                </div>
+                <p id="zipMsg" style="font-size:12px;color:#81c784;margin-top:8px"></p>
+            </div>
+
+
+        </div>
+
+        <!-- Tab: Username Check -->
+        <div class="tab-content" id="tab-check">
+            <div class="card">
+                <h3>批量检测用户名</h3>
+
+            <div id="detectStatusBar" style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px;align-items:stretch;">
+                <div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;text-align:center;">
+                    <div id="dsWork" style="font-size:22px;font-weight:700;color:#4caf50;">-</div>
+                    <div style="font-size:12px;opacity:.75;margin-top:2px;">工作中</div>
+                </div>
+                <div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;text-align:center;">
+                    <div id="dsCool" style="font-size:22px;font-weight:700;color:#ff9800;">-</div>
+                    <div style="font-size:12px;opacity:.75;margin-top:2px;">冷却中</div>
+                </div>
+                <div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;text-align:center;">
+                    <div id="dsCapped" style="font-size:22px;font-weight:700;color:#f44336;">-</div>
+                    <div style="font-size:12px;opacity:.75;margin-top:2px;">今日已满</div>
+                </div>
+                <div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;text-align:center;">
+                    <div id="dsToday" style="font-size:22px;font-weight:700;color:#2196f3;">-</div>
+                    <div style="font-size:12px;opacity:.75;margin-top:2px;">今日检测</div>
+                </div>
+            </div>
+            <div id="botWorkStatus" style="font-size:12px;opacity:.8;margin:-4px 0 12px;">每批≤300 · 每号每日≤500 · 工作中=代理线在线，冷却只计水军号</div>
+
+                <div class="file-upload" id="fileUpload">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <p>点击上传或拖拽文件到此处</p>
+                    <p class="hint">支持 .txt 文件，每行一个用户名</p>
+                    <input type="file" id="fileInput" accept=".txt,text/plain" multiple style="display:none">
+                </div>
+                <div class="form-group">
+                    <label>手动输入用户名（每行一个，不需要@符号）</label>
+                    
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px">
+                    <button class="btn btn-secondary" type="button" onclick="saveCheckPool()">保存到检测池</button>
+                    <button class="btn btn-secondary" type="button" onclick="loadCheckPool()">载入检测池</button>
+                    <button class="btn btn-danger" type="button" onclick="clearCheckPoolAll()">一键全选删除用户名</button>
+                    <button class="btn btn-primary" type="button" onclick="document.getElementById('txtBatchInput').click()">批量导入TXT</button>
+                    <input type="file" id="txtBatchInput" accept=".txt,text/plain" multiple style="display:none" onchange="importTxtFiles(this.files); this.value='';">
+                    <span id="checkPoolHint" style="font-size:12px;color:var(--text-secondary);align-self:center"></span>
+                </div>
+
+                    <textarea id="usernameInput" placeholder="username1&#10;username2&#10;username3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>检测间隔（毫秒）</label>
+                        <input type="text" id="delayInput" value="7000">
+                    </div>
+                    <div class="form-group">
+                        <label>并发数量</label>
+                        <select id="concurrencySelect">
+                            <option value="1" selected>1</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                    <button class="btn btn-primary" id="startCheckBtn" onclick="startCheckQueued()">开始检测</button>
+                    <button class="btn btn-danger hidden" id="stopCheckBtn" onclick="stopCheck()">停止</button>
+                    <button class="btn btn-secondary" onclick="clearCheck()">清空</button>
+                    <button class="btn btn-success" onclick="exportJob('all')">导出全部</button>
+                    <button class="btn btn-secondary" onclick="exportJob('clean')">导出可用</button>
+                    <button class="btn btn-secondary" onclick="exportJob('premium')">导出会员</button>
+                    <button class="btn btn-primary" onclick="savePremiumFromCheck()">写入会员文档</button>
+                    <button class="btn btn-warning" onclick="restoreData()">恢复数据</button>
+                </div>
+            </div>
+
+            <div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
+
+            
+            <div id="checkDashLine" style="color:var(--text-secondary);font-size:13px;margin:0 0 10px;">总导入 0 · 本批工作 0 · 队列剩余 0</div>
+            <div class="stats-grid" id="checkDashCards" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;">
+                <div class="stat-card"><div class="number" id="dashTotal" style="color:#3b82f6">0</div><div class="label">总导入</div></div>
+                <div class="stat-card"><div class="number" id="dashBatch" style="color:#fff">0</div><div class="label">本批工作</div></div>
+                <div class="stat-card"><div class="number" id="dashQueue" style="color:#f59e0b">0</div><div class="label">队列剩余</div></div>
+                <div class="stat-card"><div class="number" id="checkAvailable" style="color:#22c55e">0</div><div class="label">可用</div></div>
+                <div class="stat-card"><div class="number" id="checkPremium" style="color:#eab308">0</div><div class="label">会员</div></div>
+                <div class="stat-card"><div class="number" id="checkDeleted" style="color:#a855f7">0</div><div class="label">已删除</div></div>
+                <div class="stat-card"><div class="number" id="checkChecking" style="color:#fb923c">0</div><div class="label">检测中</div></div>
+            </div>
+检测结果</h3>
+                <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('all')">全部</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('available')">可用</button>
+                    
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('premium')">会员</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('ad')">广告</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('spam')">水军号</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('frozen')">冻结</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('deleted')">已注销</button>
+                    <button class="btn btn-sm btn-secondary" onclick="filterCheckResults('available')">未注册</button>
+                </div>
+                <p style="color:var(--text-secondary);font-size:12px;margin-bottom:8px;">提示：本轮：可用=干净活跃；会员=Premium。导出本轮≠服务器累计。广告/水军/注销/未注册不采集。</p>
+                <div class="username-list" id="checkResultsList" style="max-height:500px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:8px 0;border:1px solid var(--border)"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Premium Scan -->
+        <div class="tab-content" id="tab-premium" style="display:none !important;" hidden>
+            <div class="card">
+                <h3>Telegram 会员采集</h3>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+                    独立功能：只采集已开通 Telegram Premium 的账号，与「批量检测」互不影响。
+                </p>
+                <div class="form-group">
+                    <label>用户名列表（每行一个）</label>
+                    <textarea id="premiumInput" placeholder="user1&#10;user2&#10;@user3" style="min-height:140px"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+                    <button class="btn btn-primary" id="startPremiumBtn" onclick="startPremiumScan()">开始采集会员</button>
+                    <button class="btn btn-danger hidden" id="stopPremiumBtn" onclick="stopPremiumScan()">停止</button>
+                    <button class="btn btn-secondary" onclick="exportPremiumList()">导出会员文档</button>
+                    <button class="btn btn-warning" onclick="clearPremiumList()">清空会员文档</button>
+                    <button class="btn btn-secondary" onclick="loadPremiumList()">刷新已存会员</button>
+                </div>
+                <div class="progress-bar" id="premiumProgressBar"><div class="fill" id="premiumProgressFill"></div></div>
+                <div class="stats" id="premiumStats" style="display:none;margin-top:12px">
+                    <div class="stat-card"><div class="number" id="premiumScanTotal" style="color:var(--primary)">0</div><div class="label">扫描总数</div></div>
+                    <div class="stat-card"><div class="number" id="premiumScanHit" style="color:#ffc107">0</div><div class="label">发现会员</div></div>
+                    <div class="stat-card"><div class="number" id="premiumStored" style="color:var(--success)">0</div><div class="label">文档已存</div></div>
+                </div>
+                <div class="card" id="premiumResultsSection" style="display:none;margin-top:16px">
+                    <h3>本次发现的会员</h3>
+                    <div class="username-list" id="premiumResultsList" style="max-height:400px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:8px 0;border:1px solid var(--border)"></div>
+                </div>
+                <div class="card" style="margin-top:16px">
+                    <h3>已存会员文档 <span id="premiumDocCount" style="font-size:13px;color:var(--text-secondary)"></span></h3>
+                    <div class="username-list" id="premiumDocList" style="max-height:300px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:8px 0;border:1px solid var(--border)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Keyword -->
+        <div class="tab-content" 
+        <div 
+        <div id="tab-pool-api" class="tab-content" style="display:none;">
+            <h3 style="margin-top:0;">API 资源池</h3>
+            <p style="font-size:13px;opacity:.75;">数据文件：api_pool.json（服务器上不会丢）</p>
+            <div id="poolApiMount"></div>
+        </div>
+        <div id="tab-pool-ip" class="tab-content" style="display:none;">
+            <h3 style="margin-top:0;">IP 资源池</h3>
+            <p style="font-size:13px;opacity:.75;">数据文件：proxy_pool.json。保存后不自动改已有绑定。</p>
+            <div id="poolIpMount"></div>
+        </div>
+
+        <div id="tab-pool" class="tab-content" style="display:none;">
+            <h3 style="margin-top:0;">资源池 · API / 代理</h3>
+            <p style="font-size:13px;opacity:.75;">数据文件：api_pool.json / proxy_pool.json（服务器上不会丢）</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;">
+                    <h4>API 池 <span id="poolApiCount"></span></h4>
+                    <textarea id="poolApiInput" rows="5" placeholder="每行: api_id-api_hash 或 api_id:api_hash" style="width:100%;box-sizing:border-box;"></textarea>
+                    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">
+                        <button type="button" class="btn btn-primary" onclick="addPoolApiBatch()">批量添加 API</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadPoolApi()">刷新</button>
+                        <button type="button" class="btn btn-warning" onclick="redistributePoolApi()">一键均匀分配API</button>
+                    </div>
+                    <div id="poolApiList" style="margin-top:10px;max-height:260px;overflow:auto;font-size:12px;"></div>
+                </div>
+                <div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;">
+                    <h4>代理 IP 池 <span id="poolProxyCount"></span></h4>
+                    <textarea id="poolProxyInput" rows="5" placeholder="每行: ip:port:user:pass 或 socks5://user:pass@ip:port（保存后不自动改已有绑定）" style="width:100%;box-sizing:border-box;"></textarea>
+                    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">
+                        <button type="button" class="btn btn-primary" onclick="addPoolProxyBatch()">批量添加代理</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadPoolProxy()">刷新</button>
+                        <button type="button" class="btn btn-warning" onclick="redistributePoolProxy()">一键均匀分配代理</button>
+                    </div>
+                    <div id="poolProxyList" style="margin-top:10px;max-height:260px;overflow:auto;font-size:12px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-keyword">
+            <div class="keyword-filter-box card">
+                <h3>关键词过滤</h3>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">输入关键词直接从检测结果中删除包含该关键词的用户名，并永久记录，下次检测自动过滤</p>
+                <div class="form-group">
+                    <label>添加过滤关键词（空格分隔多个）</label>
+                    <div style="display:flex;gap:12px">
+                        <input type="text" id="keywordInput" placeholder="例如: Bot 代理 主 签证 集团" style="flex:1">
+                        <button class="btn btn-danger" onclick="addBlacklistKeywords()">添加并删除</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top:20px">
+                    <h4 style="color:var(--danger);margin-bottom:12px">已保存的过滤关键词</h4>
+                    <div id="blacklistTags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
+                    <button class="btn btn-sm btn-secondary" onclick="clearBlacklist()">清空所有关键词</button>
+                </div>
+
+                <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+                    <h4 style="color:var(--warning);margin-bottom:12px">本次删除的用户名 <span id="deletedCount" style="font-size:13px;color:var(--text-secondary)"></span></h4>
+                    <div class="username-list" id="deletedList" style="max-height:300px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:8px 0;border:1px solid var(--border)"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+
+        function sanitizeJobRows(list) {
+            if (!Array.isArray(list)) return [];
+            return list.filter(Boolean).map(function(r){
+                if (typeof r === 'string') return { username: r.replace(/^@/, ''), status: 'pending' };
+                r = r || {};
+                r.username = String(r.username || r.user || '').replace(/^@/, '');
+                r.status = r.status || 'pending';
+                r.premium = !!r.premium;
+                return r;
+            });
+        }
+        function dedupeCheckResults(list) {
+            var seen = {}, out = [];
+            (list || []).forEach(function(r){
+                var u = (r && (r.username || r) || '').toString().replace(/^@/, '').toLowerCase();
+                if (!u || seen[u]) return;
+                seen[u] = 1;
+                out.push(typeof r === 'string' ? { username: u, status: 'pending' } : r);
+            });
+            return out;
+        }
+        // Config
+        let AUTH_KEY = localStorage.getItem('tg_auth_key') || '';
+        let botsData = [];
+        window.checkResults = window.checkResults || [];
+        var checkResults = window.checkResults;
+        let filteredResults = [];
+        window._checkRunning = false;
+        let isChecking = false;
+        let shouldStop = false;
+
+        // ==================== Auth ====================
+        const VALID_USER = 'admin';
+        const VALID_PASS = 'Ab123456987';
+
+        
+        
+        async function deletePoolApi(apiId) {
+            if (!apiId) return;
+            if (!confirm('删除这个 API？不会改水军已保存的 api_id')) return;
+            try {
+                const d = await apiCall('/api/pool/api/item', 'POST', { api_id: apiId });
+                showToast('已删除，剩余 ' + (d.total || 0));
+                loadPoolApi();
+            } catch (e) { showToast(e.message); }
+        }
+
+        async function loadPoolApi() {
+            try {
+                const d = await apiCall('/api/pool/api');
+                const pool = d.pool || [];
+                const n = document.getElementById('poolApiCount');
+                if (n) n.textContent = '(' + pool.length + ')';
+                const el = document.getElementById('poolApiList');
+                if (el) el.innerHTML = pool.map(x => {
+                    const id = x.api_id || '';
+                    const label = x.label || ('API-' + id);
+                    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">'
+                        + '<div style="font-size:13px;word-break:break-all;">' + label + ' · ' + id + '</div>'
+                        + '<button type="button" class="btn btn-danger" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="deletePoolApi(\''+id+'\')">删除</button>'
+                        + '</div>';
+                }).join('') || '空';
+            } catch (e) { showToast('加载API池失败: ' + e.message); }
+        }
+        
+        let poolBotsCache = [];
+        let selectedPhonesByProxy = {};
+
+        function proxyKey(px) { return String(px || ''); }
+
+        async function loadPoolProxy() {
+            try {
+                let d;
+                try { d = await apiCall('/api/pool/proxy/bindings'); }
+                catch (e) { d = await apiCall('/api/pool/proxy'); }
+                const pool = d.proxies || d.pool || [];
+                poolBotsCache = d.bots || [];
+                const n = document.getElementById('poolProxyCount');
+                if (n) n.textContent = '(' + (d.total_proxies || pool.length) + ')';
+                const el = document.getElementById('poolProxyList');
+                if (!el) return;
+                if (!pool.length) { el.innerHTML = '<div style="opacity:.6;padding:8px">暂无代理</div>'; return; }
+                el.innerHTML = pool.map(function (item, idx) {
+                    const px = (typeof item === 'string') ? item : (item.proxy || item.url || '');
+                    const boundSet = {};
+                    (item.bound || []).forEach(function (b) { if (b.phone) boundSet[b.phone] = true; });
+                    if (!selectedPhonesByProxy._inited) selectedPhonesByProxy._inited = {};
+                    if (!selectedPhonesByProxy._inited[px]) {
+                        selectedPhonesByProxy[px] = {};
+                        Object.keys(boundSet).forEach(function (ph) { selectedPhonesByProxy[px][ph] = true; });
+                        selectedPhonesByProxy._inited[px] = true;
+                    }
+                    const sel = selectedPhonesByProxy[px] || {};
+                    const chips = (poolBotsCache || []).map(function (b, i) {
+                        const ph = b.phone || '';
+                        const on = !!sel[ph];
+                        const border = on ? '2px solid #22c55e' : '1px solid rgba(255,255,255,.15)';
+                        const bg = on ? 'rgba(34,197,94,.32)' : 'rgba(255,255,255,.04)';
+                        return '<button type="button" class="proxy-chip" data-proxy="'+encodeURIComponent(px)+'" data-phone="'+ph+'" style="border:'+border+';background:'+bg+';color:#e8eef7;border-radius:999px;padding:4px 8px;margin:3px;font-size:12px;cursor:pointer;">'+(b.index || (i+1))+' '+(ph || b.name || '')+'</button>';
+                    }).join('');
+                    const boundCount = (item.bound_count != null) ? item.bound_count : (item.bound || []).length;
+                    return '<div class="proxy-item" style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;margin:8px 0;">'
+                        + '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">'
+                        + '<span style="flex:0 0 36px;height:36px;line-height:36px;text-align:center;border-radius:10px;background:#3b82f6;color:#fff;font-weight:800;font-size:16px;">'+(idx+1)+'</span>'
+                        + '<div style="font-size:16px;word-break:break-all;opacity:1;line-height:1.45;font-weight:600;letter-spacing:.2px;">'+px+'</div>'
+                        + '</div>'
+                        + '<div style="font-size:11px;opacity:.6;margin-bottom:6px;">第 '+(idx+1)+' 条 / 共 '+pool.length+' 条 · 已绑定 '+boundCount+' 个号</div>'
+                        + '<div class="proxy-chips">'+chips+'</div>'
+                        + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">'
+                        + '<button type="button" class="btn btn-secondary" onclick="bindSelectedToProxy(decodeURIComponent(\''+encodeURIComponent(px)+'\'))">绑定这些号</button>'
+                        + '<button type="button" class="btn btn-danger" onclick="deleteProxyItem(decodeURIComponent(\''+encodeURIComponent(px)+'\'))">删除</button>'
+                        + '</div></div>';
+                }).join('');
+                el.querySelectorAll('.proxy-chip').forEach(function (btn) {
+                    btn.onclick = function () {
+                        const px = decodeURIComponent(btn.getAttribute('data-proxy') || '');
+                        const ph = btn.getAttribute('data-phone') || '';
+                        if (!selectedPhonesByProxy[px]) selectedPhonesByProxy[px] = {};
+                        if (selectedPhonesByProxy[px][ph]) delete selectedPhonesByProxy[px][ph];
+                        else selectedPhonesByProxy[px][ph] = true;
+                        loadPoolProxy();
+                    };
+                });
+            } catch (e) { showToast('加载代理池失败: ' + e.message); }
+        }
+
+        async function bindSelectedToProxy(px) {
+            const map = selectedPhonesByProxy[px] || {};
+            const phones = Object.keys(map);
+            if (!phones.length) { showToast('请先点选要绑定的水军号'); return; }
+            try {
+                const d = await apiCall('/api/pool/proxy/bind', 'POST', { proxy: px, phones: phones });
+                showToast('已绑定 ' + (d.changed || 0) + ' 个号到该 IP');
+                selectedPhonesByProxy[px] = {};
+                phones.forEach(function (ph) { selectedPhonesByProxy[px][ph] = true; });
+                if (!selectedPhonesByProxy._inited) selectedPhonesByProxy._inited = {};
+                selectedPhonesByProxy._inited[px] = true;
+                loadPoolProxy();
+            } catch (e) { showToast(e.message); }
+        }
+
+        async function deleteProxyItem(px) {
+            if (!confirm('删除这条代理？不会自动改其他号的绑定')) return;
+            try {
+                await apiCall('/api/pool/proxy/item', 'POST', { proxy: px, unbind: false });
+                showToast('已删除代理');
+                loadPoolProxy();
+            } catch (e) { showToast(e.message); }
+        }
+
+        async function addPoolApiBatch() {
+            const raw = (document.getElementById('poolApiInput').value || '').trim();
+            if (!raw) { showToast('请输入API'); return; }
+            try {
+                const d = await apiCall('/api/pool/api/batch', 'POST', { text: raw });
+                showToast('API 添加 ' + (d.added || 0) + '，共 ' + (d.total || 0));
+                document.getElementById('poolApiInput').value = '';
+                loadPoolApi();
+            } catch (e) { showToast(e.message); }
+        }
+        async function addPoolProxyBatch() {
+            const raw = (document.getElementById('poolProxyInput').value || '').trim();
+            if (!raw) { showToast('请输入代理'); return; }
+            try {
+                const d = await apiCall('/api/pool/proxy/batch', 'POST', { text: raw, proxies: raw.split(/\n/) });
+                showToast('代理添加 ' + (d.added || 0) + '，共 ' + (d.total || 0));
+                document.getElementById('poolProxyInput').value = '';
+                loadPoolProxy();
+            } catch (e) { showToast(e.message); }
+        }
+        async function redistributePoolApi() {
+            if (!confirm('将 API 均匀分配到所有水军？')) return;
+            try {
+                const d = await apiCall('/api/pool/api/redistribute', 'POST', {});
+                showToast(d.message || '完成');
+            } catch (e) { showToast(e.message); }
+        }
+        async function redistributePoolProxy() {
+            if (!confirm('将代理均匀分配到所有水军？')) return;
+            try {
+                const d = await apiCall('/api/pool/proxy/redistribute', 'POST', {});
+                showToast(d.message || '完成');
+            } catch (e) { showToast(e.message); }
+        }
+
+        
+        function doLogin() {
+            var userEl = document.getElementById('loginUsername');
+            var passEl = document.getElementById('loginPassword');
+            var username = userEl ? userEl.value.trim() : '';
+            var password = passEl ? passEl.value.trim() : '';
+            if (!username || !password) { showToast('请输入用户名和密码'); return; }
+            var okUser = (username === VALID_USER || username === 'admin');
+            var okPass = (password === VALID_PASS || password === 'Ab123456' || password === 'Ab123456987');
+            if (!okUser || !okPass) { showToast('用户名或密码错误'); return; }
+            AUTH_KEY = 'fe570f573d2840308f6a298daa3ad4a0';
+            try {
+                localStorage.setItem('tg_auth_key', AUTH_KEY);
+                localStorage.setItem('tg_logged_in', 'true');
+            } catch (e) {}
+            var ov = document.getElementById('loginOverlay');
+            var main = document.getElementById('mainContent');
+            if (ov) ov.style.display = 'none';
+            if (main) main.style.display = 'block';
+            if (typeof apiCall === 'function') {
+                apiCall('/api/status').then(function(data){
+                    if (typeof loadDashboard === 'function') loadDashboard(data);
+                }).catch(function(){});
+            }
+        }
+
+
+        setInterval(function(){ try{ if(typeof refreshBotWorkStatus==='function') refreshBotWorkStatus(); }catch(e){} }, 15000);
+        function checkAuth() {
+            if (localStorage.getItem('tg_logged_in') === 'true') {
+                AUTH_KEY = 'fe570f573d2840308f6a298daa3ad4a0';
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                apiCall('/api/status').then(data => {
+                    loadDashboard(data);
+                }).catch(() => {});
+            }
+        }
+
+        // ==================== API ====================
+        
+        let networkPaused = false;
+        let pendingResume = false;
+        function isNetworkErrorMessage(msg) {
+            const s = String(msg || '').toLowerCase();
+            return (
+                s.includes('failed to fetch') ||
+                s.includes('networkerror') ||
+                s.includes('network error') ||
+                s.includes('err_internet_disconnected') ||
+                s.includes('err_name_not_resolved') ||
+                s.includes('err_connection') ||
+                s.includes('load failed') ||
+                s.includes('internet disconnected')
+            );
+        }
+        async function waitUntilOnline(timeoutMs) {
+            const start = Date.now();
+            while (!navigator.onLine) {
+                if (Date.now() - start > (timeoutMs || 600000)) return false;
+                await sleep(2000);
+            }
+            // 再探活后端
+            for (let i = 0; i < 15; i++) {
+                try {
+                    const r = await fetch('/health', { cache: 'no-store' });
+                    if (r.ok) return true;
+                } catch (e) {}
+                await sleep(2000);
+            }
+            return navigator.onLine;
+        }
+        function pauseForNetwork(reason) {
+            if (networkPaused) return;
+            networkPaused = true;
+            try { showToast('浏览器网络波动，后台检测继续'); } catch (e) {}
+            return;
+            shouldStop = true;
+            pendingResume = isChecking || (checkResults || []).some(r => r.status === 'pending' || r.status === 'checking');
+            try { showToast('网络异常，已自动停止: ' + (reason || '')); } catch (e) {}
+            const startBtn = document.getElementById('startCheckBtn');
+            const stopBtn = document.getElementById('stopCheckBtn');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (stopBtn) stopBtn.classList.add('hidden');
+        }
+        async function tryResumeAfterNetwork() {
+            if (!pendingResume) return;
+            const ok = await waitUntilOnline(120000);
+            if (!ok) {
+                try { showToast('网络仍未恢复，请手动继续检测'); } catch (e) {}
+                networkPaused = false;
+                return;
+            }
+            networkPaused = false;
+            pendingResume = false;
+            // 只续跑还在 pending 的
+            const left = (checkResults || []).filter(r => r.status === 'pending' || (r.status === 'error' && !(r.error||'').includes('FloodWait'))).map(r => r.username);
+            if (!left.length) {
+                try { showToast('网络已恢复，没有待检测项'); } catch (e) {}
+                return;
+            }
+            try { showToast('网络已恢复，自动继续剩余 ' + left.length + ' 个'); } catch (e) {}
+            // 填回输入框并触发检测（避免重复已完成的）
+            const input = document.getElementById('usernameInput');
+            if (input) input.value = left.join('\n');
+            if (typeof startCheck === 'function') {
+                // 稍等 UI
+                setTimeout(() => { try { startCheck(); } catch (e) {} }, 500);
+            }
+        }
+        window.addEventListener('offline', function() {
+            pauseForNetwork('浏览器 offline');
+        });
+        window.addEventListener('online', function() {
+            try { showToast('网络已连接，准备续跑…'); } catch (e) {}
+            tryResumeAfterNetwork();
+        });
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const url = endpoint;
+            const options = {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${AUTH_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            if (body) options.body = JSON.stringify(body);
+            const resp = await fetch(url, options);
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        }
+
+        // ==================== Dashboard ====================
+        function loadDashboard(data) {
+            botsData = data.bots || [];
+            const running = botsData.filter(b => b.status === 'running').length;
+            const stopped = botsData.length - running;
+
+            document.getElementById('statTotal').textContent = botsData.length;
+            document.getElementById('statRunning').textContent = running;
+            document.getElementById('statStopped').textContent = stopped;
+
+            // Load stats
+            apiCall('/api/stats').then(s => {
+                const stats = s.stats || {};
+                document.getElementById('statTodaySent').textContent = stats.today_sent || 0;
+                document.getElementById('statTotalSent').textContent = stats.total_sent || 0;
+                document.getElementById('statTotalSuccess').textContent = stats.total_success || 0;
+                document.getElementById('statTotalFailed').textContent = stats.total_failed || 0;
+                document.getElementById('statTodaySuccess').textContent = stats.today_success || 0;
+            }).catch(() => {});
+
+            renderBotGrid();
+        }
+
+        function refreshStatus() {
+            apiCall('/api/status').then(data => {
+                loadDashboard(data);
+                showToast('状态已刷新');
+            }).catch(err => showToast('刷新失败: ' + err.message));
+        }
+
+        // ==================== Bot Management ====================
+        function renderBotGrid() {
+            const grid = document.getElementById('botGrid');
+            if (botsData.length === 0) {
+                grid.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px">暂无水军账号，请点击"增加水军"添加</p>';
+                return;
+            }
+            grid.innerHTML = botsData.map(bot => `
+                <div class="bot-card">
+                    <div class="bot-card-header">
+                        <h4>${bot.name}</h4>
+                        <span class="bot-status ${bot.status}"><span class="bot-status-dot"></span>${bot.status === 'running' ? '运行中' : '已停止'}</span>
+                    </div>
+                    <div class="bot-card-info">
+                        <p>水军编号: ${bot.name}</div><div style="font-size:12px;opacity:.9;margin-top:4px">手机: ${bot.phone || "-"}</p>
+                    </div>
+                    <div class="bot-card-actions">
+                        ${bot.status === 'running' 
+                            ? `<button class="btn btn-danger btn-sm" onclick="stopBot('${bot.id}')">停止</button>`
+                            : `<button class="btn btn-success btn-sm" onclick="startBot('${bot.id}')">启动</button>`
+                        }
+                        <button class="btn btn-warning btn-sm" onclick="checkBot('${bot.id}')">自检</button>
+                        <button class="btn btn-secondary btn-sm" onclick="confirmDeleteBot('${bot.id}', '${bot.name}')">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function sendCode() {
+            const phone = document.getElementById('addBotPhone').value.trim();
+            if (!phone) { showToast('请填写手机号'); return; }
+            
+            const apiId = document.getElementById('addBotApiId').value.trim();
+            const apiHash = document.getElementById('addBotApiHash').value.trim();
+            
+            const payload = { phone };
+            if (apiId && apiHash) {
+                payload.api_id = apiId;
+                payload.api_hash = apiHash;
+            }
+            
+            const btn = document.getElementById('sendCodeBtn');
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+            apiCall('/api/bot/send_code', 'POST', payload).then(data => {
+                showToast('验证码已发送，请查看 Telegram');
+                btn.textContent = '已发送';
+                let countdown = 60;
+                const timer = setInterval(() => {
+                    countdown--;
+                    btn.textContent = countdown + 's';
+                    if (countdown <= 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = '发送验证码';
+                    }
+                }, 1000);
+            }).catch(err => {
+                showToast('发送失败: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            });
+        }
+
+        function addBot() {
+            const name = document.getElementById('addBotName').value.trim();
+            const phone = document.getElementById('addBotPhone').value.trim();
+            const code = document.getElementById('addBotCode').value.trim();
+            const password = document.getElementById('addBot2FA').value.trim();
+            const apiId = document.getElementById('addBotApiId').value.trim();
+            const apiHash = document.getElementById('addBotApiHash').value.trim();
+
+            if (!name || !phone) { showToast('请填写编号和手机号'); return; }
+            if (!code) { showToast('请填写验证码'); return; }
+
+            const payload = { name, phone, code, password };
+            if (apiId && apiHash) {
+                payload.api_id = apiId;
+                payload.api_hash = apiHash;
+            }
+
+            apiCall('/api/bot/verify', 'POST', payload).then(data => {
+                showToast('水军添加成功！');
+                clearAddForm();
+                refreshStatus();
+                switchTab('bots');
+            }).catch(err => showToast('添加失败: ' + err.message));
+        }
+
+        function batchAddBots() {
+            const input = document.getElementById('batchAddInput').value.trim();
+            if (!input) { showToast('请输入批量数据'); return; }
+
+            const lines = input.split('\n').filter(l => l.trim());
+            let success = 0, failed = 0;
+
+            const addNext = (index) => {
+                if (index >= lines.length) {
+                    showToast(`批量发送完成: 成功 ${success}, 失败 ${failed}`);
+                    refreshStatus();
+                    return;
+                }
+                const parts = lines[index].split(',').map(p => p.trim());
+                if (parts.length < 2) { failed++; addNext(index + 1); return; }
+
+                apiCall('/api/bot/send_code', 'POST', {
+                    name: parts[0],
+                    phone: parts[1]
+                }).then(() => { success++; addNext(index + 1); })
+                .catch(() => { failed++; addNext(index + 1); });
+            };
+            addNext(0);
+        }
+
+        function clearAddForm() {
+            document.getElementById('addBotName').value = '';
+            document.getElementById('addBotPhone').value = '';
+            document.getElementById('addBotCode').value = '';
+            document.getElementById('addBot2FA').value = '';
+        }
+
+        function startBot(botId) {
+            apiCall('/api/bot/start', 'POST', { bot_id: botId }).then(() => {
+                showToast('Bot已启动');
+                refreshStatus();
+            }).catch(err => showToast('启动失败: ' + err.message));
+        }
+
+        function stopBot(botId) {
+            apiCall('/api/bot/stop', 'POST', { bot_id: botId }).then(() => {
+                showToast('Bot已停止');
+                refreshStatus();
+            }).catch(err => showToast('停止失败: ' + err.message));
+        }
+
+        function confirmDeleteBot(botId, name) {
+            if (confirm(`确定要删除水军 "${name}" (${botId}) 吗？此操作不可恢复。`)) {
+                apiCall('/api/bot/delete', 'POST', { bot_id: botId }).then(() => {
+                    showToast('Bot已删除');
+                    refreshStatus();
+                }).catch(err => showToast('删除失败: ' + err.message));
+            }
+        }
+
+        function checkBot(botId) {
+            apiCall('/api/bot/check', 'POST', { bot_id: botId }).then(data => {
+                const cls = data.status === 'ok' ? 'check-ok' : data.status === 'warning' ? 'check-warn' : 'check-err';
+                showToast(`${data.bot_name}: ${data.message}`);
+            }).catch(err => showToast('自检失败: ' + err.message));
+        }
+
+        function checkAllBots() {
+            apiCall('/api/check_all').then(data => {
+                const card = document.getElementById('checkResultsCard');
+                const container = document.getElementById('checkResults');
+                card.style.display = 'block';
+                container.innerHTML = data.results.map(r => {
+                    const cls = r.status === 'ok' ? 'check-ok' : r.status === 'warning' ? 'check-warn' : 'check-err';
+                    return `<div class="check-item"><span>${r.bot_name} (${r.bot_id})</span><span class="${cls}">${r.message}</span></div>`;
+                }).join('');
+                showToast('自检完成');
+            }).catch(err => showToast('自检失败: ' + err.message));
+        }
+
+        // ==================== Username Check ====================
+        // File upload
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileUpload = document.getElementById('fileUpload');
+            const fileInput = document.getElementById('fileInput');
+            fileUpload.addEventListener('click', () => fileInput.click());
+            fileUpload.addEventListener('dragover', e => { e.preventDefault(); fileUpload.style.borderColor = 'var(--primary)'; });
+            fileUpload.addEventListener('dragleave', () => { fileUpload.style.borderColor = 'var(--border)'; });
+            fileUpload.addEventListener('drop', e => { e.preventDefault(); fileUpload.style.borderColor = 'var(--border)'; if(e.dataTransfer.files && e.dataTransfer.files.length) importTxtFiles(e.dataTransfer.files); });
+            fileInput.addEventListener('change', e => { if(e.target.files && e.target.files.length) importTxtFiles(e.target.files); e.target.value=''; });
+            renderBlacklistTags();
+        });
+
+        
+        function importTxtFiles(files) {
+            var list = Array.prototype.slice.call(files || []);
+            if (!list.length) return;
+            var box = document.getElementById('usernameInput');
+            var chunks = [box ? String(box.value || '') : ''];
+            var pending = list.length;
+            list.forEach(function(file){
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    chunks.push(String(e.target.result || ''));
+                    pending -= 1;
+                    if (pending > 0) return;
+                    var seen = {}, out = [];
+                    chunks.join('\n').split(/\r?\n/).forEach(function(line){
+                        var u = String(line || '').trim().replace(/^@/, '');
+                        if (!u) return;
+                        var k = u.toLowerCase();
+                        if (seen[k]) return;
+                        seen[k] = 1;
+                        out.push(u);
+                    });
+                    if (box) box.value = out.join('\n');
+                    try { window._checkImportTotal = (typeof countInputNames==='function') ? countInputNames() : out.length; updateCheckStats(); } catch (err) {}
+                    showToast('已导入 ' + list.length + ' 个TXT，共 ' + out.length + ' 个用户名');
+                };
+                reader.onerror = function(){ pending -= 1; showToast('读取失败: ' + file.name); };
+                reader.readAsText(file);
+            });
+        }
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById('usernameInput').value = e.target.result; showToast('文件已加载: ' + file.name); };
+            reader.readAsText(file);
+        }
+
+
+        const MAX_BATCH = 300;
+        let usernameQueue = [];
+        let queueTotalAll = 0;
+        window._checkImportTotal = 0;
+        window._checkFilter = 'all';
+        window._lastPaintKey = '';
+
+        function setDashFixed(total, batch, left) {
+            total = Math.max(0, Number(total)||0);
+            batch = Math.max(0, Number(batch)||0);
+            left = Math.max(0, Number(left)||0);
+            window._checkImportTotal = total;
+            var map = {
+                checkTotal: total,
+                statImportTotal: total,
+                importTotal: total,
+                dsImport: total,
+                checkWorking: batch,
+                checkBatch: batch,
+                statBatchWork: batch,
+                batchWorking: batch,
+                checkPending: left,
+                checkQueueLeft: left,
+                statQueueLeft: left,
+                remainCount: left
+            };
+            Object.keys(map).forEach(function(id){
+                var el = document.getElementById(id);
+                if (el) el.textContent = String(map[id]);
+            });
+            var line = document.getElementById('queueSummary') || document.getElementById('checkQueueLine') || document.getElementById('queueSummaryAuto');
+            if (line) line.textContent = '总导入 ' + total + ' · 本批工作 ' + batch + ' · 队列剩余 ' + left;
+        }
+
+        function countByStatus() {
+            var list = checkResults || [];
+            var n = function(fn){ return list.filter(fn).length; };
+            return {
+                clean: n(function(r){ return r.status==='clean' || (!!r.collect && !r.premium && r.status!=='premium'); }),
+                premium: n(function(r){ return !!r.premium; }),
+                deleted: n(function(r){ return r.status==='deleted'; }),
+                ad: n(function(r){ return r.status==='ad'; }),
+                spam: n(function(r){ return r.status==='spam'; }),
+                channel: n(function(r){ return r.status==='channel'; }),
+                missing: n(function(r){ return r.status==='missing' || r.status==='not_found'; }),
+                checking: n(function(r){ return r.status==='checking' || r.status==='pending'; })
+            };
+        }
+
+        
+        
+        function countInputNames() {
+            var box = document.getElementById('usernameInput');
+            if (!box) return 0;
+            var seen = {}, n = 0;
+            String(box.value || '').split(/\r?\n/).forEach(function(u) {
+                u = String(u || '').trim().replace(/^@/, '');
+                if (!u) return;
+                var k = u.toLowerCase();
+                if (seen[k]) return;
+                seen[k] = 1;
+                n++;
+            });
+            return n;
+        }
+
+        
+        
+        
+        
+        function updateCheckStats() {
+            var list = (window.checkResults && window.checkResults.length)
+                ? window.checkResults
+                : ((typeof checkResults !== 'undefined' && checkResults) ? checkResults : []);
+            var total = Number(window._checkImportTotal || 0);
+            if (!total) total = list.length || 0;
+            var checking = 0, pending = 0, done = 0, clean = 0, prem = 0, del = 0;
+            for (var i = 0; i < list.length; i++) {
+                var r = list[i] || {};
+                if (r.status === 'checking') checking++;
+                else if (r.status === 'pending') pending++;
+                else if (r.status) done++;
+                if (r.status === 'clean' || r.collect === true) clean++;
+                if (r.premium) prem++;
+                if (r.status === 'deleted') del++;
+            }
+            var doneBatches = Math.floor(done / 300);
+            var inBatchDone = done % 300;
+            var batchSize = Math.min(300, Math.max(0, total - doneBatches * 300));
+            var running = !!(window.isChecking || (typeof isChecking !== 'undefined' && isChecking));
+            var batch, queueLeft;
+            if (total > 0 && done >= total) {
+                batch = 0;
+                queueLeft = 0;
+            } else if (running || done > 0) {
+                batch = Math.max(0, batchSize - inBatchDone);
+                queueLeft = Math.max(0, total - (doneBatches + 1) * 300);
+            } else {
+                batch = 0;
+                queueLeft = total;
+            }
+            function set(id, v) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = String(v);
+            }
+            set('dashTotal', total);
+            set('dashBatch', batch);
+            set('dashQueue', queueLeft);
+            try {
+                window._keptResults = window._keptResults || [];
+                for (var k = 0; k < list.length; k++) {
+                    var rr = list[k] || {};
+                    if (!rr.username || rr.status === 'pending' || rr.status === 'checking') continue;
+                    var key = String(rr.username).replace(/^@/, '').toLowerCase();
+                    var at = -1;
+                    for (var j = 0; j < window._keptResults.length; j++) {
+                        if (String(window._keptResults[j].username || '').replace(/^@/, '').toLowerCase() === key) { at = j; break; }
+                    }
+                    if (at >= 0) window._keptResults[at] = rr;
+                    else window._keptResults.push(rr);
+                }
+                clean = 0; prem = 0; del = 0;
+                for (var n = 0; n < window._keptResults.length; n++) {
+                    var x = window._keptResults[n] || {};
+                    if (x.status === 'clean' || x.status === 'available' || x.collect === true) clean++;
+                    if (x.premium) prem++;
+                    if (x.status === 'deleted') del++;
+                }
+                try { localStorage.setItem('tg_check_log', JSON.stringify(window._keptResults)); } catch (e2) {}
+            } catch (e) {}
+            set('checkAvailable', clean);
+            set('checkPremium', prem);
+            set('checkDeleted', del);
+            set('checkChecking', checking);
+            if (window._liveDash) {
+                var ld = window._liveDash;
+                if (ld.available != null) set('checkAvailable', ld.available);
+                if (ld.premium != null) set('checkPremium', ld.premium);
+                if (ld.deleted != null) set('checkDeleted', ld.deleted);
+                set('checkChecking', ld.checking || 0);
+            }
+            var line = document.getElementById('checkDashLine');
+            if (line) line.textContent = '总导入 ' + total + ' · 本批工作 ' + batch + ' · 队列剩余 ' + queueLeft;
+        }
+
+
+
+
+
+
+        
+        
+        function applyCheckData(index, data) {
+            if (!checkResults[index] || !data) return;
+            if (data.status) checkResults[index].status = data.status;
+            checkResults[index].premium = !!data.premium;
+            checkResults[index].collect = !!data.collect;
+            checkResults[index].is_ad = !!data.is_ad;
+            checkResults[index].is_spam = !!data.is_spam;
+            checkResults[index].error = data.reason || data.error || '';
+            checkResults[index].reason = data.reason || data.error || '';
+            checkResults[index].first_name = data.first_name || '';
+            checkResults[index].online = data.online || '';
+            checkResults[index].was_online = data.was_online || '';
+            checkResults[index].phone = data.phone || '';
+        }
+
+        function statusLabel(status, premium) {
+            if (status === 'spam') return { text: '水军', color: '#ff5252' };
+            if (status === 'ad') return { text: '广告', color: '#ff5252' };
+            if (status === 'unavailable' || status === 'retry') return { text: '未找到', color: '#8b93a7' };
+            if (status === 'flood') return { text: '限流', color: '#ff9800' };
+            if (status === 'skip') return { text: '已跳过', color: '#666' };
+            if (status === 'inactive') return { text: '超30天', color: '#90a4ae' };
+            if (premium || status === 'premium') return { text: '会员', color: '#ffc107' };
+            var map = {
+                pending: { text: '等待', color: '#64748b' },
+                checking: { text: '检测中', color: '#60a5fa' },
+                clean: { text: '可用', color: '#22c55e' },
+                taken: { text: '可用', color: '#22c55e' },
+                ad: { text: '广告', color: '#fb923c' },
+                spam: { text: '水军号', color: '#94a3b8' },
+                deleted: { text: '已注销', color: '#c084fc' },
+                frozen: { text: '冻结', color: '#f59e0b' },
+                inactive: { text: '长期未在线', color: '#9e9e9e' },
+                channel: { text: '频道/群组', color: '#64748b' },
+                missing: { text: '未注册', color: '#94a3b8' },
+                not_found: { text: '未注册', color: '#94a3b8' },
+                invalid: { text: '无效', color: '#f59e0b' },
+                flood: { text: '限流', color: '#f97316' },
+                error: { text: '错误', color: '#60a5fa' }
+            };
+            return map[status] || { text: status || '-', color: '#e5e7eb' };
+        }
+
+
+        function normalizeCheckRow(data, username) {
+            data = data || {};
+            var st = data.status || 'error';
+            var reason = data.reason || '';
+            if (st === 'unavailable' || st === 'available') {
+                if (reason === 'not_found' || data.error === 'USERNAME_NOT_OCCUPIED') st = 'missing';
+                else if (reason === 'no_user' || data.entity_type === 'Channel' || data.entity_type === 'Chat') st = 'channel';
+                else st = 'missing';
+            }
+            if (data.premium) st = (st === 'ad' || st === 'spam') ? st : 'clean';
+            return {
+                username: (data.username || username || '').replace(/^@/, ''),
+                status: st,
+                premium: !!data.premium,
+                collect: !!(data.collect || data.premium || st === 'clean'),
+                is_ad: !!data.is_ad,
+                is_spam: !!data.is_spam,
+                error: data.error || null,
+                first_name: data.first_name || '',
+                time: new Date().toLocaleTimeString()
+            };
+        }
+
+        
+        
+        function copyUsername(u) {
+            u = String(u || '').replace(/^@/, '');
+            var text = '@' + u;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function(){ showToast('已复制 ' + text); }).catch(function(){
+                    prompt('复制用户名', text);
+                });
+            } else {
+                prompt('复制用户名', text);
+            }
+        }
+
+        function renderCheckResults() {
+            var viewRows = checkResults.filter(function(r){ return !r || r.status !== 'skip'; });
+
+            var box = document.getElementById('checkResultsList');
+            if (!box) return;
+            var list = (window.viewRows && window.viewRows.length)
+                ? window.viewRows
+                : ((typeof viewRows !== 'undefined' && viewRows) ? viewRows : []);
+            if (!list.length) { box.innerHTML = ''; return; }
+            box.innerHTML = list.map(function(r) {
+                var s = statusLabel(r.status, r.premium);
+                var u = (r.username || '').replace(/^@/, '');
+                return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06)">'
+                    + '<span style="display:flex;align-items:center;gap:8px;min-width:0">'
+                    + '<span style="overflow:hidden;text-overflow:ellipsis">@' + u + '</span>'
+                    + '<button type="button" class="btn btn-sm btn-secondary" style="padding:2px 8px;height:24px;flex:0 0 auto" onclick="copyUsername(\'' + u.replace(/'/g, '') + '\')">复制</button>'
+                    + '</span>'
+                    + '<span style="color:' + s.color + ';font-weight:600;white-space:nowrap">' + s.text + (r.error ? (' · ' + r.error) : '') + '</span>'
+                    + '</div>';
+            }).join('');
+        }
+
+
+
+        async function checkUsername(username, index) {
+            if (!checkResults[index]) checkResults[index] = { username: username, status: 'pending' };
+            checkResults[index].status = 'checking';
+            updateCheckStats();
+            try {
+                var data = await apiCall('/api/check/one', 'POST', { username: username });
+                
+                if (data && data.status === 'flood' && !data.drop) {
+                    checkResults[index].status = 'flood';
+                    checkResults[index].error = data.reason || '限流';
+                    checkResults[index].collect = false;
+                    try { updateCheckStats(); } catch (e) {}
+                    try { applyCheckData(index, data); } catch (e) {}
+                    try { renderCheckResults(typeof currentFilter === 'string' ? currentFilter : 'all'); } catch (e) {}
+                    return;
+                }
+
+                if (data && (data.drop || data.status === 'skip')) {
+                    checkResults[index].status = data.status || 'skip';
+                    checkResults[index].error = data.reason || data.error || '';
+                    checkResults[index].reason = data.reason || data.error || '';
+                    checkResults[index].first_name = data.first_name || '';
+                    checkResults[index].online = data.online || '';
+                    checkResults[index].premium = !!data.premium;
+                    checkResults[index].collect = !!data.collect;
+                    checkResults[index].phone = data.phone || '';
+                    try { updateCheckStats(); } catch (e) {}
+                    try { renderCheckResults(typeof currentFilter === 'string' ? currentFilter : 'all'); } catch (e) {}
+                    return;
+                }
+
+                var row = normalizeCheckRow(data, username);
+                checkResults[index] = row;
+                if (row.premium) {
+                    try { await apiCall('/api/premium/result', 'POST', { premium: [row] }); } catch (e) {}
+                }
+                if (row.collect && row.status === 'clean') {
+                    try { await apiCall('/api/targets/result', 'POST', { targets: [row] }); } catch (e) {}
+                }
+            } catch (e) {
+                checkResults[index] = { username: username, status: 'error', error: String(e.message||e).slice(0,120) };
+            }
+            updateCheckStats();
+            renderCheckResults();
+        }
+
+        
+        async function startCheckQueued() {
+            if (window._jobPolling) { showToast('后台正在检测，不用重复开始'); return; }
+            var box = document.getElementById('usernameInput');
+            var raw = box ? box.value : '';
+            var names = [];
+            var seen = {};
+            String(raw || '').split(/\r?\n/).forEach(function(u) {
+                u = String(u || '').trim().replace(/^@/, '');
+                if (!u) return;
+                var k = u.toLowerCase();
+                if (seen[k]) return;
+                seen[k] = 1;
+                names.push(u);
+            });
+            if (!names.length) { showToast('请输入用户名'); return; }
+            var doneMap = {};
+            (window.checkResults || []).forEach(function (r) {
+                if (!r || !r.username) return;
+                var st = String(r.status || '');
+                if (st && st !== 'pending' && st !== 'checking' && st !== 'flood' && st !== 'retry') doneMap[String(r.username).toLowerCase()] = 1;
+            });
+            try {
+                var kept = JSON.parse(localStorage.getItem('tg_check_log') || '[]');
+                (kept || []).forEach(function (r) {
+                    if (!r || !r.username) return;
+                    var st = String(r.status || '');
+                    if (st && st !== 'pending' && st !== 'checking') doneMap[String(r.username).toLowerCase()] = 1;
+                });
+            } catch (e) {}
+            var skipped = names.filter(function (u) { return doneMap[u.toLowerCase()]; }).length;
+            names = names.filter(function (u) { return !doneMap[u.toLowerCase()]; });
+            if (!names.length) { showToast('上一轮已检测过，不再重复检测'); return; }
+            if (skipped) showToast('跳过已检测 ' + skipped + ' 个');
+            window.shouldStop = false;
+            window.isChecking = true;
+            window._checkImportTotal = names.length;
+            window._jobCursor = 0;
+            window.checkResults = names.map(function(u) {
+                return { username: u, status: 'pending', premium: false, collect: false };
+            });
+            var startBtn = document.getElementById('startCheckBtn');
+            var stopBtn = document.getElementById('stopCheckBtn');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+            try { updateCheckStats(); } catch (e) {}
+            var delay = parseInt((document.getElementById('delayInput') || {}).value, 10) || 3000;
+            try {
+                var started = await apiCall('/api/check/job/start', 'POST', { usernames: names, delay: delay });
+                if (started && started.success === false) { showToast(started.error || '启动失败'); throw new Error(started.error || 'start'); }
+            } catch (e) {
+                var msg = (e && e.message) ? e.message : String(e);
+                if (msg.indexOf('已有检测') >= 0) {
+                    showToast('后台已在检测，直接接上');
+                    resumeServerJob();
+                    return;
+                }
+                window.isChecking = false;
+                if (startBtn) startBtn.classList.remove('hidden');
+                if (stopBtn) stopBtn.classList.add('hidden');
+                showToast('后台启动失败: ' + msg);
+                return;
+            }
+            showToast('已交给后台检测。刷新或断网也会继续，直到手动停止或全部查完');
+            pollServerJob();
+        }
+        async function pollServerJob() {
+            window._jobPolling = true;
+            window.isChecking = true;
+            var startBtn = document.getElementById('startCheckBtn');
+            var stopBtn = document.getElementById('stopCheckBtn');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+            try {
+                var d = await apiCall('/api/check/job/status?from=' + (window._jobCursor || 0) + '&limit=300');
+                window._liveDash = {
+                    checking: (d && d.running) ? 1 : 0,
+                    available: (d && d.round_available != null) ? d.round_available : (d ? d.available : null),
+                    premium: (d && d.round_premium != null) ? d.round_premium : (d ? d.premium : null),
+                    deleted: (d && d.round_deleted != null) ? d.round_deleted : (d ? d.deleted : null)
+                };
+                var rows = (d && d.results) || [];
+                if (!window.checkResults) window.checkResults = [];
+                for (var i = 0; i < rows.length; i++) {
+                    var r = normalizeCheckRow(rows[i], rows[i].username);
+                    var idx = (window._jobCursor || 0) + i;
+                    if (window.checkResults[idx]) window.checkResults[idx] = Object.assign(window.checkResults[idx], r);
+                    else window.checkResults.push(r);
+                }
+                window._jobCursor = (window._jobCursor || 0) + rows.length;
+                if (d && d.total) window._checkImportTotal = d.total;
+                try { updateCheckStats(); } catch (e) {}
+                var now = Date.now();
+                if (!window._lastRender || now - window._lastRender > 2000) {
+                    window._lastRender = now;
+                    try { renderCheckResults(); } catch (e) {}
+                }
+                if (d && d.running) {
+                    setTimeout(pollServerJob, 1200);
+                    return;
+                }
+                try { renderCheckResults(); updateCheckStats(); } catch (e) {}
+                window.isChecking = false;
+                window._jobPolling = false;
+                if (startBtn) startBtn.classList.remove('hidden');
+                if (stopBtn) stopBtn.classList.add('hidden');
+                showToast((d && d.message) || '检测完成');
+            } catch (e) {
+                window.isChecking = true;
+                setTimeout(pollServerJob, 3000);
+            }
+        }
+        async function resumeServerJob() {
+            try {
+                var d = await apiCall('/api/check/job/status?from=0&limit=1&full=1');
+                if (!d || !d.running) return;
+                var order = d.order || [];
+                window._checkImportTotal = d.total || order.length;
+                window.checkResults = order.map(function(u) { return { username: u, status: 'pending', premium: false, collect: false }; });
+                var box = document.getElementById('usernameInput');
+                if (box && order.length) box.value = order.map(function(u) { return '@' + String(u).replace(/^@/, ''); }).join('\n');
+                window._jobCursor = 0;
+                window.shouldStop = false;
+                showToast('后台仍在检测，已接上，不用重新开始');
+                pollServerJob();
+            } catch (e) {}
+        }
+        setTimeout(resumeServerJob, 800);
+        
+        async function startCheckNow() {
+            if (window._localRunning) { showToast('正在检测'); return; }
+            var box = document.getElementById('usernameInput');
+            var names = [], seen = {};
+            String(box ? box.value : '').split(/\r?\n/).forEach(function(u){
+                u = String(u||'').trim().replace(/^@/,'');
+                if (!u) return;
+                var k = u.toLowerCase();
+                if (seen[k]) return;
+                seen[k] = 1;
+                names.push(u);
+            });
+            if (!names.length) { showToast('请输入用户名'); return; }
+            window.shouldStop = false;
+            window.isChecking = true;
+            window._localRunning = true;
+            window._checkImportTotal = names.length;
+            window.checkResults = names.map(function(u){ return {username:u, status:'pending', premium:false, collect:false}; });
+            try { checkResults = window.checkResults; } catch (e) {}
+            var startBtn = document.getElementById('startCheckBtn');
+            var stopBtn = document.getElementById('stopCheckBtn');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+            showToast('开始检测，共 ' + names.length + ' 个');
+            var delay = parseInt((document.getElementById('delayInput')||{}).value, 10) || 3000;
+            for (var i = 0; i < names.length; i++) {
+                if (window.shouldStop) break;
+                window.checkResults[i].status = 'checking';
+                try { updateCheckStats(); renderCheckResults(); } catch (e) {}
+                try {
+                    if (typeof checkUsername === 'function') await checkUsername(names[i], i);
+                    else {
+                        var data = await apiCall('/api/check/one', 'POST', {username: names[i]});
+                        window.checkResults[i] = Object.assign({username: names[i]}, data || {});
+                    }
+                } catch (err) {
+                    window.checkResults[i].status = 'error';
+                    window.checkResults[i].error = (err && err.message) || 'error';
+                }
+                try { updateCheckStats(); renderCheckResults(); } catch (e) {}
+                if (i + 1 < names.length && !window.shouldStop) {
+                    await new Promise(function(ok){ setTimeout(ok, delay); });
+                }
+            }
+            window._localRunning = false;
+            window.isChecking = false;
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (stopBtn) stopBtn.classList.add('hidden');
+            try { updateCheckStats(); renderCheckResults(); } catch (e) {}
+            showToast(window.shouldStop ? '已停止' : '检测完成');
+        }
+
+        function stopCheck() {
+            window.shouldStop = true;
+            if (typeof shouldStop !== 'undefined') shouldStop = true;
+            apiCall('/api/check/job/stop', 'POST', {}).catch(function(){});
+            showToast('已发送停止。当前这一条返回后，后台就停');
+        }
+
+
+        
+        async function clearCheck() {
+            shouldStop = true;
+            try { apiCall('/api/check/job/stop', 'POST', {}); } catch (e) {}
+            isChecking = false;
+            usernameQueue = [];
+            checkResults = [];
+            queueTotalAll = 0;
+            window._checkImportTotal = 0;
+            var inp = document.getElementById('usernameInput'); if (inp) inp.value = '';
+            setDashFixed(0,0,0);
+            ['checkAvailable','checkPremium','checkDeleted','checkAd','checkSpam'].forEach(function(id){
+                var el = document.getElementById(id); if (el) el.textContent = '0';
+            });
+            var list = document.getElementById('checkResultsList'); if (list) list.innerHTML = '';
+            document.getElementById('startCheckBtn').classList.remove('hidden');
+            document.getElementById('stopCheckBtn').classList.add('hidden');
+            showToast('已清空导入队列和检测结果');
+        }
+
+                        async function saveTargetsFromCheck() {
+            const hits = getBatchClean();
+            if (!hits.length) { showToast('当前结果中没有可用用户'); return; }
+            try {
+                const data = await apiCall('/api/targets/result', 'POST', { targets: hits });
+                showToast('已写入可用文档 ' + (data.added??hits.length) + ' 条，累计 ' + (data.total||'') + ' 条');
+            } catch (err) { showToast('写入失败: ' + err.message); }
+        }
+
+        function exportResults(type) {
+            let data;
+            if (type === 'available') {
+                data = checkResults.filter(r => r.status === 'clean' || r.collect === true || (r.premium && r.status !== 'ad' && r.status !== 'spam'));
+            } else if (type === 'taken') {
+                data = checkResults.filter(r => r.status === 'taken');
+            } else if (type === 'premium') {
+                data = checkResults.filter(r => !!r.premium);
+            } else if (type === 'deleted') {
+                data = checkResults.filter(r => r.status === 'deleted');
+            } else {
+                data = checkResults;
+            }
+            if (!data.length) { showToast('没有可导出的数据'); return; }
+            const content = data.map(r => `@${r.username}`).join('\n');
+            downloadFile(content, `tg_check_${type}_${new Date().toISOString().slice(0,10)}.txt`);
+            showToast('已导出 ' + data.length + ' 条' + (type === 'available' ? '（仅可用）' : type === 'premium' ? '（仅会员）' : ''));
+        }
+
+        
+        async function restoreData() {
+            try {
+                showToast('正在恢复数据...');
+                const resp = await fetch('/tg_check_available.txt');
+                if (!resp.ok) throw new Error('File not found');
+                const text = await resp.text();
+                const usernames = text.split('\n').map(u => u.trim().replace(/^@/, '')).filter(u => u.length > 0);
+                let results = usernames.map(u => ({ username: u, status: 'available', time: '已恢复' }));
+                // 应用黑名单过滤
+                results = applyBlacklistFilter(results);
+                // 去重
+                const seen = new Set();
+                results = results.filter(r => {
+                    const lower = r.username.toLowerCase();
+                    if (seen.has(lower)) return false;
+                    seen.add(lower);
+                    return true;
+                });
+                checkResults = sanitizeJobRows(dedupeCheckResults(results));
+                document.getElementById('checkStats').style.display = 'grid';
+                document.getElementById('checkResultsSection').style.display = 'block';
+                updateCheckStats();
+                renderCheckResults();
+                const filtered = usernames.length - results.length;
+                showToast(`已恢复 ${results.length} 条可用用户名数据` + (filtered > 0 ? `（过滤了 ${filtered} 个）` : ''));
+            } catch(e) {
+                showToast('恢复失败: ' + e.message);
+            }
+        }
+
+        // ==================== Keyword Filter ====================
+        // ==================== 黑名单关键词过滤 ====================
+        function getBlacklist() {
+            return JSON.parse(localStorage.getItem('tg_blacklist_keywords') || '[]');
+        }
+        function saveBlacklist(list) {
+            localStorage.setItem('tg_blacklist_keywords', JSON.stringify(list));
+        }
+        function renderBlacklistTags() {
+            const list = getBlacklist();
+            const container = document.getElementById('blacklistTags');
+            if (!list.length) {
+                container.innerHTML = '<span style="color:var(--text-secondary);font-size:13px">暂无过滤关键词</span>';
+                return;
+            }
+            container.innerHTML = list.map(kw => 
+                `<span style="background:var(--danger);color:#fff;padding:4px 10px;border-radius:12px;font-size:12px;display:inline-flex;align-items:center;gap:4px">${kw}<span onclick="removeBlacklistKeyword('${kw}')" style="cursor:pointer;font-weight:bold;margin-left:4px">&times;</span></span>`
+            ).join('');
+        }
+        function addBlacklistKeywords() {
+            const input = document.getElementById('keywordInput').value.trim();
+            if (!input) { showToast('请输入关键词'); return; }
+            const keywords = input.split(/\s+/).filter(k => k.length > 0);
+            const list = getBlacklist();
+            let added = 0;
+            keywords.forEach(kw => {
+                if (!list.includes(kw.toLowerCase())) {
+                    list.push(kw.toLowerCase());
+                    added++;
+                }
+            });
+            saveBlacklist(list);
+            // 从检测结果中删除包含这些关键词的用户名
+            const before = checkResults.length;
+            const deleted = checkResults.filter(r => matchesBlacklist(r.username, keywords.map(k => k.toLowerCase())));
+            checkResults = sanitizeJobRows(dedupeCheckResults(checkResults.filter(r => !matchesBlacklist(r.username, keywords.map(k => k.toLowerCase())))));
+            const removedCount = before - checkResults.length;
+            // 显示删除的用户名
+            document.getElementById('deletedCount').textContent = `(共 ${removedCount} 个)`;
+            document.getElementById('deletedList').innerHTML = deleted.map(r => 
+                `<div style="padding:6px 16px;border-bottom:1px solid var(--border);font-family:monospace;font-size:13px;color:var(--danger)">@${r.username}</div>`
+            ).join('') || '<div style="padding:16px;text-align:center;color:var(--text-secondary)">无匹配结果</div>';
+            // 更新统计和显示
+            updateCheckStats();
+            renderCheckResults();
+            renderBlacklistTags();
+            document.getElementById('keywordInput').value = '';
+            showToast(`已添加 ${added} 个关键词，删除 ${removedCount} 个用户名`);
+        }
+        function matchesBlacklist(username, keywords) {
+            const lower = username.toLowerCase();
+            return keywords.some(kw => lower.includes(kw));
+        }
+        function removeBlacklistKeyword(kw) {
+            let list = getBlacklist();
+            list = list.filter(k => k !== kw);
+            saveBlacklist(list);
+            renderBlacklistTags();
+            showToast(`已移除关键词: ${kw}`);
+        }
+        function clearBlacklist() {
+            saveBlacklist([]);
+            renderBlacklistTags();
+            showToast('已清空所有过滤关键词');
+        }
+        function applyBlacklistFilter(results) {
+            const list = getBlacklist();
+            if (!list.length) return results;
+            return results.filter(r => !matchesBlacklist(r.username, list));
+        }
+        function getSeenUsernames() {
+            return JSON.parse(localStorage.getItem('tg_seen_usernames') || '[]');
+        }
+        function saveSeenUsernames(list) {
+            localStorage.setItem('tg_seen_usernames', JSON.stringify(list));
+        }
+        function deduplicateResults(results) {
+            const seen = new Set(getSeenUsernames());
+            const unique = [];
+            results.forEach(r => {
+                if (!seen.has(r.username.toLowerCase())) {
+                    seen.add(r.username.toLowerCase());
+                    unique.push(r);
+                }
+            });
+            saveSeenUsernames([...seen]);
+            return unique;
+        }
+
+
+        // ==================== 独立会员采集 ====================
+        let premiumResults = [];
+        let isPremiumScanning = false;
+        let shouldStopPremium = false;
+
+        async function startPremiumScan() {
+            const input = document.getElementById('premiumInput').value.trim();
+            if (!input) { showToast('请输入用户名'); return; }
+            let usernames = input.split('\n').map(u => u.trim().replace(/^@/, '')).filter(u => u.length > 0);
+            usernames = [...new Set(usernames.map(u => u.toLowerCase()))].map(u => usernames.find(orig => orig.toLowerCase() === u));
+            if (!usernames.length) { showToast('没有有效的用户名'); return; }
+
+            isPremiumScanning = true;
+            shouldStopPremium = false;
+            document.getElementById('startPremiumBtn').classList.add('hidden');
+            document.getElementById('stopPremiumBtn').classList.remove('hidden');
+            document.getElementById('premiumProgressBar').classList.add('active');
+            document.getElementById('premiumStats').style.display = 'grid';
+            document.getElementById('premiumResultsSection').style.display = 'block';
+            premiumResults = [];
+            document.getElementById('premiumScanTotal').textContent = usernames.length;
+            document.getElementById('premiumScanHit').textContent = '0';
+            document.getElementById('premiumResultsList').innerHTML = '';
+
+            const concurrency = 2;
+            for (let i = 0; i < usernames.length; i += concurrency) {
+                if (shouldStopPremium) break;
+                const batch = usernames.slice(i, i + concurrency);
+                await Promise.all(batch.map(async (u) => {
+                    try {
+                        const data = await apiCall('/api/check/one', 'POST', { username: u });
+                        if (data.premium && data.status === 'taken') {
+                            premiumResults.push(data);
+                            document.getElementById('premiumResultsList').innerHTML = premiumResults.map(r =>
+                                '<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:14px;display:flex;justify-content:space-between"><span style="font-family:monospace">@' + r.username + ' ⭐</span><span style="color:#ffc107;font-size:12px">会员</span></div>'
+                            ).join('');
+                            document.getElementById('premiumScanHit').textContent = premiumResults.length;
+                        }
+                    } catch (e) {}
+                }));
+                document.getElementById('premiumProgressFill').style.width = Math.min(((i + concurrency) / usernames.length) * 100, 100) + '%';
+                if (i + concurrency < usernames.length && !shouldStopPremium) await sleep(800);
+            }
+
+            isPremiumScanning = false;
+            document.getElementById('startPremiumBtn').classList.remove('hidden');
+            document.getElementById('stopPremiumBtn').classList.add('hidden');
+
+            if (premiumResults.length) {
+                try {
+                    const data = await apiCall('/api/premium/result', 'POST', { premium: premiumResults });
+                    showToast('采集完成：发现 ' + premiumResults.length + ' 个会员，新写入 ' + data.added + ' 条');
+                    loadPremiumList();
+                } catch (err) {
+                    showToast('采集完成：发现 ' + premiumResults.length + ' 个会员，写入失败');
+                }
+            } else {
+                showToast(shouldStopPremium ? '已停止' : '采集完成，未发现会员');
+            }
+        }
+
+        function stopPremiumScan() {
+            shouldStopPremium = true;
+            isPremiumScanning = false;
+            document.getElementById('startPremiumBtn').classList.remove('hidden');
+            document.getElementById('stopPremiumBtn').classList.add('hidden');
+            showToast('正在停止...');
+        }
+
+        async function loadPremiumList() {
+            try {
+                const data = await apiCall('/api/premium');
+                const list = data.usernames || [];
+                const stored = document.getElementById('premiumStored');
+                if (stored) stored.textContent = list.length;
+                document.getElementById('premiumDocCount').textContent = '（共 ' + list.length + ' 条）';
+                document.getElementById('premiumDocList').innerHTML = list.length
+                    ? list.map(u => '<div style="padding:8px 16px;border-bottom:1px solid var(--border);font-family:monospace;font-size:13px">' + (u.startsWith('@') ? u : '@'+u) + ' ⭐</div>').join('')
+                    : '<div style="padding:16px;color:var(--text-secondary);text-align:center">暂无会员数据</div>';
+            } catch (err) {
+                showToast('加载会员文档失败: ' + err.message);
+            }
+        }
+
+        async function exportPremiumList() {
+            try {
+                const resp = await fetch('/api/premium/export', { headers: { 'Authorization': 'Bearer ' + AUTH_KEY } });
+                if (!resp.ok) throw new Error('导出失败');
+                const text = await resp.text();
+                if (!text.trim()) { showToast('会员文档为空'); return; }
+                downloadFile(text, 'tg_premium_' + new Date().toISOString().slice(0,10) + '.txt');
+                showToast('会员文档已导出');
+            } catch (err) {
+                showToast('导出失败: ' + err.message);
+            }
+        }
+
+        async function clearPremiumList() {
+            if (!confirm('确定清空全部会员文档？')) return;
+            try {
+                await apiCall('/api/premium/clear', 'POST', {});
+                showToast('会员文档已清空');
+                loadPremiumList();
+            } catch (err) {
+                showToast('清空失败: ' + err.message);
+            }
+        }
+
+        // ==================== Utilities ====================
+        
+        
+        
+        async function paintBotPhones() {
+            try {
+                var d = await apiCall('/api/bots/work_status');
+                var bots = d.bots || [];
+                var byName = {}, byPhone = {}, byId = {};
+                bots.forEach(function (b) {
+                    if (b.name != null) byName[String(b.name)] = b;
+                    if (b.phone) byPhone[String(b.phone)] = b;
+                    if (b.id) byId[b.id] = b;
+                });
+                var cards = document.querySelectorAll('.bot-card, .soldier-card, [class*="bot-card"], .bots-grid > div, .bot-list > div');
+                if (!cards.length) {
+                    // 兜底：含「水军编号」的块
+                    document.querySelectorAll('div').forEach(function (el) {
+                        var t = el.innerText || '';
+                        if (/水军编号/.test(t) && t.length < 280 && el.querySelector('button')) cards = (cards.length ? cards : []);
+                    });
+                    var list = [];
+                    document.querySelectorAll('div').forEach(function (el) {
+                        var t = el.innerText || '';
+                        if (t.indexOf('水军编号') >= 0 && el.querySelector('button') && t.length < 320) list.push(el);
+                    });
+                    cards = list;
+                }
+                cards.forEach(function (card) {
+                    var text = card.innerText || '';
+                    var b = null;
+                    var m = text.match(/水军编号[：:]\s*(\S+)/);
+                    if (m) b = byName[m[1]];
+                    if (!b) {
+                        for (var ph in byPhone) {
+                            if (text.indexOf(ph) >= 0) { b = byPhone[ph]; break; }
+                        }
+                    }
+                    if (!b) {
+                        // 卡片大标题数字
+                        var h = card.querySelector('h3,h4,.title,div');
+                        if (h) {
+                            var n = String(h.textContent || '').trim();
+                            if (byName[n]) b = byName[n];
+                        }
+                    }
+                    if (!b || !b.phone) return;
+                    var old = card.querySelector('.bot-phone-line');
+                    if (old) { old.textContent = '手机: ' + b.phone; return; }
+                    var line = document.createElement('div');
+                    line.className = 'bot-phone-line';
+                    line.style.cssText = 'font-size:12px;opacity:.9;margin:6px 0;word-break:break-all;color:#90caf9;';
+                    line.textContent = '手机: ' + b.phone;
+                    var btn = card.querySelector('button');
+                    try { card.appendChild(line); } catch (e1) {}
+                });
+            } catch (e) { console.error('paintBotPhones', e); }
+        }
+
+        
+        
+        setTimeout(function(){ try{ try{placeKeywordPanelOnly();}catch(e){} }catch(e){} }, 500);
+        
+        setTimeout(function(){ try{ try{placeKeywordPanelOnly();}catch(e){} }catch(e){} }, 500);
+        function placeKeywordPanelOnly(){ return; }
+
+
+        
+        
+        let floodPause = false;
+        async function waitAndResumeCheck(reason) {
+            if (floodPause) return;
+            floodPause = true;
+            shouldStop = false;
+            try { showToast((reason || '限流/错误') + '，1分钟后自动继续'); } catch (e) {}
+            await sleep(60000);
+            floodPause = false;
+            shouldStop = false;
+            try { showToast('已等待1分钟，继续检测'); } catch (e) {}
+        }
+
+        
+        function isolatePoolColumns() {
+            try {
+                var root = document.getElementById('tab-pool');
+                if (!root) return;
+                var grid = root.querySelector('div[style*="grid-template-columns"], .pool-grid');
+                var cols = [];
+                if (grid) {
+                    cols = Array.prototype.slice.call(grid.children);
+                } else {
+                    // 两列卡片兜底
+                    cols = Array.prototype.slice.call(root.querySelectorAll('h4')).map(function (h) { return h.parentElement; });
+                }
+                var apiBox = null, ipBox = null;
+                cols.forEach(function (el) {
+                    var t = (el.innerText || '') + (el.querySelector('h4') ? el.querySelector('h4').innerText : '');
+                    if (/API/.test(t) && !apiBox) apiBox = el;
+                    if (/代理|IP 池|IP池/.test(t) && !ipBox) ipBox = el;
+                });
+                var apiMount = document.getElementById('poolApiMount');
+                var ipMount = document.getElementById('poolIpMount');
+                if (apiBox && apiMount && !apiMount.contains(apiBox)) apiMount.appendChild(apiBox);
+                if (ipBox && ipMount && !ipMount.contains(ipBox)) ipMount.appendChild(ipBox);
+                root.style.display = 'none';
+            } catch (e) { console.error('isolatePoolColumns', e); }
+        }
+
+        function switchTab(tabName) {
+            try { isolatePoolColumns(); } catch (e) {}
+            if (tabName === 'bots') { try{loadLineBoard();}catch(e){} }
+            if (tabName === 'add-bot') { try{loadLineBoard();}catch(e){} }
+            if (tabName === 'pool') tabName = 'pool-api';
+            if (tabName === 'pool-api') { try { loadPoolApi(); } catch (e) {} }
+            if (tabName === 'pool-ip') { try { loadPoolProxy(); } catch (e) {} }
+
+            try {
+              if (tabName === 'keyword') document.body.classList.add('show-keyword');
+              else document.body.classList.remove('show-keyword');
+            } catch(e) {}
+
+            try {
+                document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(function (el) {
+                    el.classList.remove('active');
+                    el.style.display = 'none';
+                });
+                var btn = document.querySelector('.tab[data-tab="' + tabName + '"]');
+                if (btn) btn.classList.add('active');
+                var panel = document.getElementById('tab-' + tabName);
+                if (panel) {
+                    panel.classList.add('active');
+                    panel.style.display = 'block';
+                }
+                // 关键词块只在 keyword
+                document.querySelectorAll('.keyword-filter-box').forEach(function (el) {
+                    el.style.setProperty('display', tabName === 'keyword' ? 'block' : 'none', 'important');
+                });
+                if (tabName === 'pool') {
+                    try { loadPoolApi(); loadPoolProxy(); } catch (e) {}
+                }
+                if (tabName === 'check') {
+                    try { if (typeof refreshBotWorkStatus === 'function') refreshBotWorkStatus(); } catch (e) {}
+                }
+            } catch (e) { console.error(e); }
+        }
+
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function exportJob(type) {
+            if (type === "clean" || type === "available") {
+                var shown = [];
+                var src = (window._keptResults && window._keptResults.length) ? window._keptResults : (window.checkResults || []);
+                src.forEach(function (r) {
+                    if (!r) return;
+                    if (r.premium) return;
+                    if (r.status === "clean" || r.status === "available" || r.collect === true) {
+                        var u = String(r.username || "").replace(/^@/, "").trim();
+                        if (u) shown.push(u);
+                    }
+                });
+                apiCall("/api/check/job/export_and_clear_available", "POST", { usernames: shown }).then(function (d) {
+                    var names = (d && d.usernames) || [];
+                    if (!names.length) { showToast("没有可导出的数据"); return; }
+                    downloadFile(names.join("\n"), "可用.txt");
+                    window.checkResults = (window.checkResults || []).filter(function (r) {
+                        return !(r && ((r.status === "clean" || r.status === "available" || r.collect === true) && !r.premium));
+                    });
+                    try { checkResults = window.checkResults; } catch (e) {}
+                    if (window._liveDash) window._liveDash.available = 0;
+                    var el = document.getElementById("checkAvailable");
+                    if (el) el.textContent = "0";
+                    try { updateCheckStats(); renderCheckResults(); } catch (e) {}
+                    showToast("已导出 " + names.length + " 条，可用已清零");
+                }).catch(function (e) { showToast("导出失败: " + (e && e.message || e)); });
+                return;
+            }
+            var list = (window.checkResults && window.checkResults.length) ? window.checkResults : ((typeof checkResults !== "undefined" && checkResults) ? checkResults : []);
+            var rows;
+            if (type === "premium") rows = list.filter(function (r) { return r && !!r.premium; });
+            else rows = list.filter(function (r) { return r && r.username; });
+            if (!rows.length) { showToast("没有可导出的数据"); return; }
+            var content = rows.map(function (r) { return "@" + String(r.username || "").replace(/^@/, ""); }).join("\n");
+            var name = type === "premium" ? "会员.txt" : "全部.txt";
+            downloadFile(content, name);
+            showToast("已开始下载 " + rows.length + " 条");
+        }
+        function downloadFile(content, filename) {
+            const type = filename.endsWith('.csv') ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8';
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+            setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+        }
+
+        // Init
+        checkAuth();
+    
+/* keep-check-log */
+(function () {
+    function snapshot() {
+        try {
+            window._keptResults = window._keptResults || [];
+            var cur = (typeof checkResults !== 'undefined' && checkResults) ? checkResults : [];
+            for (var i = 0; i < cur.length; i++) {
+                var r = cur[i];
+                if (!r || !r.username) continue;
+                if (r.status === 'pending' || r.status === 'checking' || r.status === '等待') continue;
+                var key = String(r.username).toLowerCase();
+                var at = -1;
+                for (var j = 0; j < window._keptResults.length; j++) {
+                    if (String(window._keptResults[j].username || '').toLowerCase() === key) { at = j; break; }
+                }
+                if (at >= 0) window._keptResults[at] = r;
+                else window._keptResults.push(r);
+            }
+            try { localStorage.setItem('tg_check_log', JSON.stringify(window._keptResults)); } catch (e) {}
+        } catch (e) {}
+    }
+    try {
+        var saved = JSON.parse(localStorage.getItem('tg_check_log') || '[]');
+        if (Array.isArray(saved)) window._keptResults = saved;
+    } catch (e) { window._keptResults = window._keptResults || []; }
+    function paintCounts() {
+        var done = window._keptResults || [];
+        var pend = 0;
+        try {
+            var cur = checkResults || [];
+            for (var i = 0; i < cur.length; i++) {
+                var st = cur[i] && cur[i].status;
+                if (st === 'pending' || st === 'checking' || st === '等待') pend++;
+            }
+        } catch (e) {}
+        function set(id, n) { var el = document.getElementById(id); if (el) el.textContent = n; }
+        set('checkAvailable', (window._liveDash && window._liveDash.available != null) ? window._liveDash.available : done.filter(function (r) { return r.status === 'clean' || r.status === 'available'; }).length);
+        set('checkPremium', done.filter(function (r) { return !!r.premium; }).length);
+        set('checkDeleted', done.filter(function (r) { return r.status === 'deleted'; }).length);
+        set('checkPending', pend);
+    }
+    if (typeof renderCheckResults === 'function') {
+        var _render = renderCheckResults;
+        var _lock = false;
+        renderCheckResults = function (filter) {
+            if (_lock) return _render.apply(this, arguments);
+            _lock = true;
+            var orig = checkResults;
+            try {
+                snapshot();
+                var kept = window._keptResults || [];
+                if (kept.length) {
+                    var seen = {};
+                    for (var i = 0; i < kept.length; i++) {
+                        if (kept[i] && kept[i].username) seen[String(kept[i].username).toLowerCase()] = 1;
+                    }
+                    var pending = [];
+                    var cur = orig || [];
+                    for (var j = 0; j < cur.length; j++) {
+                        var r = cur[j];
+                        if (!r) continue;
+                        var st = r.status;
+                        if ((st === 'pending' || st === 'checking' || st === '等待') && !seen[String(r.username || '').toLowerCase()]) pending.push(r);
+                    }
+                    checkResults = kept.concat(pending);
+                }
+                return _render.apply(this, arguments);
+            } finally {
+                checkResults = orig;
+                _lock = false;
+                try { paintCounts(); } catch (e) {}
+            }
+        };
+    }
+    function wrapStart(name) {
+        var fn = window[name];
+        if (typeof fn !== 'function') return;
+        window[name] = async function () {
+            try { snapshot(); } catch (e) {}
+            return fn.apply(this, arguments);
+        };
+    }
+    wrapStart('startCheck');
+    wrapStart('startCheckQueued');
+    if (typeof clearCheck === 'function') {
+        var _clear = clearCheck;
+        clearCheck = function () {
+            window._keptResults = [];
+            try { localStorage.removeItem('tg_check_log'); } catch (e) {}
+            return _clear.apply(this, arguments);
+        };
+    }
+    try { if (window._keptResults && window._keptResults.length && typeof renderCheckResults === 'function') renderCheckResults('all'); } catch (e) {}
+})();
+
+/* keep-row-after-check */
+(function () {
+    function esc(s) {
+        return String(s || "").replace(/[&<>"']/g, function (c) {
+            return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+        });
+    }
+    function labelOf(r) {
+        if (!r) return "未检出";
+        if (r.result_label) return r.result_label;
+        if (r.premium && (r.status === "clean" || r.status === "available" || r.status === "taken")) return "会员";
+        var map = {clean:"可用",available:"可用",taken:"已占用",ad:"广告",spam:"水军",deleted:"已注销",inactive:"不活跃",skip:"未检出",unavailable:"未注册",retry:"未找到",flood:"冻结",error:"错误",invalid:"无效",pending:"等待",checking:"检测中"};
+        return map[r.status] || r.status || "未检出";
+    }
+    function showRow(r, f) {
+        f = f || "all";
+        var lab = labelOf(r);
+        if (f === "all" || f === "全部") return true;
+        if (f === "premium" || f === "会员") return !!r.premium || lab === "会员";
+        if (f === "ad" || f === "广告") return r.status === "ad" || lab === "广告";
+        if (f === "spam" || f === "水军" || f === "水军号") return r.status === "spam" || lab === "水军";
+        if (f === "deleted" || f === "已注销") return r.status === "deleted" || lab === "已注销";
+        if (f === "available" || f === "clean" || f === "可用") return r.status === "clean" || r.status === "available" || lab === "可用";
+        if (f === "flood" || f === "frozen" || f === "inactive" || f === "冻结") return r.status === "flood" || r.status === "inactive" || lab === "冻结" || lab === "不活跃";
+        if (f === "unavailable" || f === "skip" || f === "未注册") return r.status === "unavailable" || r.status === "skip" || r.status === "retry" || lab === "未注册" || lab === "未检出";
+        return r.status === f || lab === f;
+    }
+    function remember(row) {
+        window._keptResults = window._keptResults || [];
+        var key = String(row.username || "").replace(/^@/, "").toLowerCase();
+        var at = -1;
+        for (var i = 0; i < window._keptResults.length; i++) {
+            if (String(window._keptResults[i].username || "").replace(/^@/, "").toLowerCase() === key) { at = i; break; }
+        }
+        if (at >= 0) window._keptResults[at] = row;
+        else window._keptResults.push(row);
+        try { localStorage.setItem("tg_check_log", JSON.stringify(window._keptResults)); } catch (e) {}
+    }
+    function ensureVisible() {
+        var list = document.getElementById("checkResultsList");
+        if (!list) return;
+        var f = window._checkFilter || "all";
+        var have = {};
+        Array.prototype.forEach.call(list.children, function (el) {
+            var m = (el.innerText || "").match(/@([A-Za-z0-9_]+)/);
+            if (m) have[m[1].toLowerCase()] = el;
+        });
+        var frag = document.createDocumentFragment();
+        (window._keptResults || []).forEach(function (r) {
+            if (!showRow(r, f)) return;
+            var key = String(r.username || "").replace(/^@/, "").toLowerCase();
+            if (!key || have[key]) return;
+            var lab = labelOf(r);
+            var name = (r.first_name || "");
+            var extra = r.reason || r.error || r.online || "";
+            var color = lab === "可用" ? "#22c55e" : lab === "会员" ? "#ffc107" : lab === "广告" ? "#f87171" : lab === "水军" ? "#fb923c" : lab === "已注销" ? "#a78bfa" : lab === "冻结" ? "#ff9800" : "#94a3b8";
+            var div = document.createElement("div");
+            div.setAttribute("data-keep-user", key);
+            div.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06)";
+            div.innerHTML = "<span>@" + esc(key) + (name ? " · " + esc(name) : "") + (extra ? " · " + esc(extra) : "") + "</span><span style=\"color:" + color + ";font-weight:600\">" + esc(lab) + "</span>";
+            frag.appendChild(div);
+        });
+        if (frag.childNodes.length) list.insertBefore(frag, list.firstChild);
+        var done = window._keptResults || [];
+        function num(id, n) { var el = document.getElementById(id); if (el) el.textContent = String(n); }
+        num("checkAvailable", (window._liveDash && window._liveDash.available != null) ? window._liveDash.available : done.filter(function (r) { return r.status === "clean" || r.status === "available"; }).length);
+        num("checkPremium", (window._liveDash && window._liveDash.premium != null) ? window._liveDash.premium : done.filter(function (r) { return !!r.premium; }).length);
+        num("checkDeleted", (window._liveDash && window._liveDash.deleted != null) ? window._liveDash.deleted : done.filter(function (r) { return r.status === "deleted"; }).length);
+    }
+    function restore(username, index, data) {
+        var uname = String((data && data.username) || username || "").replace(/^@/, "");
+        if (!uname || typeof checkResults === "undefined" || !checkResults) return;
+        var key = uname.toLowerCase();
+        var row = {
+            username: uname,
+            status: (data && data.status) || "skip",
+            premium: !!(data && data.premium),
+            reason: (data && (data.reason || data.error)) || "",
+            first_name: (data && data.first_name) || "",
+            online: (data && data.online) || "",
+            result_label: (data && data.result_label) || "",
+            drop: false
+        };
+        if (!data) row.result_label = "未检出";
+        var found = -1;
+        for (var i = 0; i < checkResults.length; i++) {
+            if (String(checkResults[i].username || "").replace(/^@/, "").toLowerCase() === key) { found = i; break; }
+        }
+        if (found >= 0) {
+            checkResults[found].status = row.status;
+            checkResults[found].premium = row.premium;
+            checkResults[found].reason = row.reason;
+            checkResults[found].first_name = row.first_name;
+            checkResults[found].online = row.online;
+            checkResults[found].result_label = row.result_label || labelOf(row);
+            checkResults[found].drop = false;
+            row = checkResults[found];
+        } else {
+            var at = (typeof index === "number" && index >= 0 && index <= checkResults.length) ? index : checkResults.length;
+            checkResults.splice(at, 0, row);
+        }
+        remember(row);
+        try { renderCheckResults(window._checkFilter || "all"); } catch (e) {}
+        try { ensureVisible(); } catch (e) {}
+    }
+    if (typeof checkUsername === "function") {
+        var _check = checkUsername;
+        checkUsername = async function (username, index) {
+            var captured = null;
+            var prev = apiCall;
+            apiCall = function () {
+                var args = arguments;
+                return Promise.resolve(prev.apply(this, args)).then(function (res) {
+                    try {
+                        if (args[0] && String(args[0]).indexOf("/api/check") >= 0 && res && (res.username || res.status)) captured = res;
+                    } catch (e) {}
+                    return res;
+                });
+            };
+            try {
+                return await _check.apply(this, arguments);
+            } finally {
+                apiCall = prev;
+                try { restore(username, index, captured); } catch (e) {}
+            }
+        };
+    }
+    if (typeof renderCheckResults === "function") {
+        var _render = renderCheckResults;
+        renderCheckResults = function (filter) {
+            if (filter) window._checkFilter = filter;
+            var ret = _render.apply(this, arguments);
+            try { ensureVisible(); } catch (e) {}
+            return ret;
+        };
+    }
+    if (typeof filterCheckResults === "function") {
+        var _filter = filterCheckResults;
+        filterCheckResults = function (filter) {
+            window._checkFilter = filter || "all";
+            var ret = _filter.apply(this, arguments);
+            try { ensureVisible(); } catch (e) {}
+            return ret;
+        };
+    }
+})();
+
+</script>
+
+
+        <script>
+function handleCheckFile(input) {
+            var f = input && input.files && input.files[0];
+            if (!f) return;
+            var reader = new FileReader();
+            reader.onload = function() {
+                var box = document.getElementById('usernameInput');
+                if (box) box.value = String(reader.result || '');
+                showToast('已载入文件');
+            };
+            reader.readAsText(f);
+        }
+        function exportBatchClean() {
+            var list = (checkResults||[]).filter(function(r){ return r.status==='clean' || r.collect; }).map(function(r){ return '@'+r.username; });
+            if (!list.length) { showToast('本轮没有可用'); return; }
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([list.join('\n')], {type:'text/plain'}));
+            a.download = 'batch_clean.txt'; a.click();
+            showToast('已导出本轮可用 '+list.length);
+        }
+        function exportBatchPremium() {
+            var list = (checkResults||[]).filter(function(r){ return !!r.premium; }).map(function(r){ return '@'+r.username; });
+            if (!list.length) { showToast('本轮没有会员'); return; }
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([list.join('\n')], {type:'text/plain'}));
+            a.download = 'batch_premium.txt'; a.click();
+            showToast('已导出本轮会员 '+list.length);
+        }
+        async function savePremiumFromCheck() {
+            var prem = (checkResults||[]).filter(function(r){ return !!r.premium; });
+            if (!prem.length) { showToast('本轮没有会员'); return; }
+            try {
+                var d = await apiCall('/api/premium/result','POST',{premium:prem});
+                showToast('已写入会员文档 '+(d.added||0)+'，共 '+(d.total||0));
+            } catch(e) { showToast('写入失败: '+e.message); }
+        }
+        async function refreshDetectBar() {
+            try {
+                var d = await apiCall('/api/bots/work_status');
+                var s = d.summary || {};
+                var set = function(id,v){ var el=document.getElementById(id); if(el) el.textContent = (v==null?'-':v); };
+                set('dsWork', s.work); set('dsCool', s.cooldown); set('dsCapped', s.daily_capped);
+                var today = 0;
+                (d.bots||[]).forEach(function(b){ today += Number(b.daily_used||0); });
+                set('dsToday', today);
+            } catch(e) {}
+        }
+        if (!window._detectBarTimer) {
+            window._detectBarTimer = setInterval(refreshDetectBar, 8000);
+            refreshDetectBar();
+        }
+
+        (function resetCheckDashOnce(){
+            window._checkImportTotal = 0;
+            ['checkTotal','checkWorking','checkPending','checkAvailable','checkPremium','checkDeleted','checkChecking'].forEach(function(id){
+                var el = document.getElementById(id);
+                if (el) el.textContent = '0';
+            });
+            var line = document.getElementById('queueSummary');
+            if (line) line.textContent = '总导入 0 · 本批工作 0 · 队列剩余 0';
+        })();
+
+        document.addEventListener('DOMContentLoaded', function(){
+            window._checkImportTotal = 0;
+            try{updateCheckStats();}catch(e){}
+            document.querySelectorAll('.stat-card .number, .stat-grid .number').forEach(function(el){
+                if (String(el.textContent).trim() === '9690') el.textContent = '0';
+            });
+        });
+
+/* ===== 水军管理 / 增加水军（feiji 线路组） ===== */
+window.LINE_CAP = 10;
+window.LINE_MAX = 6;
+window.LINE_MAX = 5;
+window.lineBoard = { lines: [], current: null, probe: {} };
+
+function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
+function proxyHost(p){
+    p = String(p||'').trim();
+    if(!p) return '';
+    return p.split(':')[0];
+}
+async function loadLineBoard(){
+    try{
+        const d = await apiCall('/api/bots/lines');
+        window.lineBoard.lines = d.lines || [];
+        const nav = document.getElementById('lineNav');
+        const hint = document.getElementById('lineTotalHint');
+        if(hint) hint.textContent = '· 共 ' + (d.total_bots||0) + ' 号';
+        const q = ((document.getElementById('lineSearch')||{}).value||'').toLowerCase();
+        if(!nav) return;
+        if(!window.lineBoard.lines.length){ nav.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">暂无 IP 线路，请先在 IP 资源池添加代理</p>'; return; }
+        nav.innerHTML = window.lineBoard.lines.map(function(L,i){
+            if (L.reserve) {
+                return '<div onclick="selectLine(\''+L.id+'\')" style="border:1px solid #f59e0b;border-radius:8px;padding:8px 10px;margin-bottom:8px;cursor:pointer"><div style="font-weight:600;color:#fbbf24">备用池</div><div style="font-size:12px;color:var(--text-secondary)">'+(L.bots||[]).length+' 个待补</div></div>';
+            }
+            const host = proxyHost(L.proxy);
+            const text = ((i+1)+'组 '+host+' '+(L.bots||[]).map(b=>b.phone||'').join(' ')).toLowerCase();
+            if(q && text.indexOf(q)<0) return '';
+            const on = (window.lineBoard.current===L.id) ? 'background:rgba(76,175,80,.18);border-color:#4caf50' : '';
+            const ok = (L.bots||[]).filter(b=> (window.lineBoard.probe[b.id]||b.health)==='ok').length;
+            const flood = (L.bots||[]).filter(b=> String(window.lineBoard.probe[b.id]||b.health||'').indexOf('flood')===0).length;
+            const dead = (L.bots||[]).filter(b=> ['unauth','dead','no_file'].indexOf(window.lineBoard.probe[b.id]||b.health)>=0).length;
+            return '<div class="group-item" data-line="'+escAttr(L.id)+'" onclick="selectLine(\''+escAttr(L.id)+'\')" style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;'+on+'">'
+                + '<div style="font-weight:600;color:#81c784">'+(i+1)+'组 · '+escAttr(host||'未分配IP')+'</div>'
+                + '<div style="font-size:12px;color:var(--text-secondary)">'+(L.bots||[]).length+'/'+window.LINE_CAP+' · 可用'+ok+' · 限流'+flood+' · 失效'+dead+'</div>'
+                + '</div>';
+        }).join('') || '<p style="color:var(--text-secondary);font-size:13px">无匹配线路</p>';
+        const sel = document.getElementById('addBotLine');
+        if(sel){
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">自动分配未满线路</option>' + window.lineBoard.lines.map(function(L,i){
+                const left = Math.max(0, window.LINE_CAP - (L.bots||[]).length);
+                return '<option value="'+escAttr(L.proxy)+'">代理-'+escAttr(proxyHost(L.proxy))+' (剩'+left+')</option>';
+            }).join('');
+            if(cur) sel.value = cur;
+        }
+        if(window.lineBoard.current) selectLine(window.lineBoard.current);
+        else if(window.lineBoard.lines[0]) selectLine(window.lineBoard.lines[0].id);
+    }catch(e){ showToast('加载线路失败: '+(e.message||e)); }
+}
+function filterLineNav(){ loadLineBoard(); }
+function selectLine(id){
+    window.lineBoard.current = id;
+    const L = (window.lineBoard.lines||[]).find(x=>x.id===id);
+    document.querySelectorAll('#lineNav .group-item').forEach(el=>{
+        el.style.background = (el.getAttribute('data-line')===id) ? 'rgba(76,175,80,.18)' : '';
+        el.style.borderColor = (el.getAttribute('data-line')===id) ? '#4caf50' : '';
+    });
+    const box = document.getElementById('lineWorkArea');
+    if(!box) return;
+    if(!L){ box.innerHTML = '<p style="color:var(--text-secondary)">线路不存在</p>'; return; }
+    const host = proxyHost(L.proxy);
+    const list = L.bots || [];
+    let html = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+        + '<div><div style="font-weight:700;color:#4ade80">代理-'+escAttr(host||'未分配')+'</div>'
+        + '<div style="font-size:12px;color:var(--text-secondary)">'+list.length+'/'+window.LINE_CAP+' · 在线'+list.filter(function(b){return (window.lineBoard.probe[b.id]||b.health)==="ok" || b.status==="running";}).length+'</div></div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+        + '<button class="btn btn-success btn-sm" onclick="lineSet(\''+escAttr(L.id)+'\',\'start\')">整组上线</button>'
+        + '<button class="btn btn-secondary btn-sm" onclick="lineSet(\''+escAttr(L.id)+'\',\'stop\')">整组下线</button>'
+        + '<button class="btn btn-warning btn-sm" onclick="probeLine(\''+escAttr(L.id)+'\')">检测活跃</button>'
+        + '<label style="font-size:13px"><input type="checkbox" onchange="toggleLineSel(this.checked)"> 全选</label>'
+        + '<button class="btn btn-danger btn-sm" onclick="deleteSelectedBots()">删除所选</button>'
+        + '</div></div>';
+    if(!list.length) html += '<p style="color:var(--text-secondary)">该线路暂无水军</p>';
+    list.forEach(function(a){
+        const st = window.lineBoard.probe[a.id] || a.health || a.status || 'unknown';
+        const color = st==='ok'?'#4caf50': (String(st).indexOf('flood')===0?'#ff9800': (st==='restricted'?'#ce93d8':'#ef5350'));
+        const sid = escAttr(a.id);
+        html += '<div class="bg-bot" style="border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px">'
+            + '<div><div>'+escAttr(a.name||'')+' · '+escAttr(a.phone||'')+'</div>'
+            + '<div style="font-size:12px;color:'+color+'">'+escAttr(st)+'</div></div>'
+            + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+            + '<button class="btn btn-primary btn-sm" onclick="toggleChat(\''+sid+'\',\''+escAttr(a.phone||a.name)+'\')">聊天</button>'
+            + '<button class="btn btn-secondary btn-sm" onclick="openProfile(\''+sid+'\',\''+escAttr(a.phone||a.name)+'\')">资料</button>'
+            + '<input type="checkbox" class="acc-chk" data-id="'+sid+'" style="width:18px;height:18px">'
+            + '<button class="btn btn-danger btn-sm" onclick="deleteOneBot(\''+sid+'\')">删除</button>'
+            + '</div></div>'
+            + '<div id="chatbox-'+sid+'" style="display:none;border-top:1px solid var(--border);padding:10px">'
+            + '<div style="display:flex;gap:8px;margin-bottom:8px"><input id="search-'+sid+'" placeholder="搜索对话 / 用户名" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchChatUser(\''+sid+'\');}">'
+            + '<button class="btn btn-secondary btn-sm" onclick="closeChatBox(\''+sid+'\')">关闭</button></div>'
+            + '<div id="dialogs-'+sid+'" style="max-height:160px;overflow:auto;font-size:13px;margin-bottom:8px"></div>'
+            + '<div id="msgs-'+sid+'" style="max-height:200px;overflow:auto;font-size:13px;margin-bottom:8px;display:none"></div>'
+            + '<div id="sendbox-'+sid+'" style="display:none;gap:8px"><input id="input-'+sid+'" style="flex:1" placeholder="回复消息" onkeydown="if(event.key===\'Enter\')sendMsg(\''+sid+'\')">'
+            + '<button class="btn btn-primary btn-sm" onclick="sendMsg(\''+sid+'\')">发送</button></div>'
+            + '</div></div>';
+    });
+    box.innerHTML = html;
+}
+function toggleLineSel(on){ document.querySelectorAll('#lineWorkArea .acc-chk').forEach(c=>c.checked=!!on); }
+async function lineSet(lineId, action){
+    const L = (window.lineBoard.lines||[]).find(x=>x.id===lineId);
+    if(!L) return;
+    const path = action==='start' ? '/api/bot/start' : '/api/bot/stop';
+    for (const b of (L.bots||[])) {
+        try { await apiCall(path, 'POST', { id: b.id }); } catch(e) {}
+    }
+    showToast(action==='start' ? '整组已上线' : '整组已下线');
+    loadLineBoard();
+}
+async function probeAllBots(){
+    const bar = document.getElementById('botProbeBar');
+    if(bar) bar.textContent = '检测中…';
+    try{
+        const d = await apiCall('/api/bots/health', 'POST', {});
+        (d.rows||[]).forEach(r=>{ window.lineBoard.probe[r.id] = r.health; });
+        if(bar) bar.textContent = '可用 '+(d.ok||0)+' · 限流 '+(d.flood||0)+' · 解析受限 '+(d.restricted||0)+' · 失效 '+(d.unauth||0)+' / 共 '+(d.total||0);
+        if (d.deleted) showToast('已自动删除死号 ' + d.deleted + ' 个');
+        await loadLineBoard();
+    }catch(e){ if(bar) bar.textContent = '检测失败 '+(e.message||e); }
+}
+async function probeLine(id){
+    try{
+        const d = await apiCall('/api/bots/health', 'POST', { line_id: id });
+        (d.rows||[]).forEach(r=>{ window.lineBoard.probe[r.id] = r.health; });
+        showToast(d.deleted ? ('本组检测完成，已删除死号 ' + d.deleted + ' 个') : '本组检测完成');
+        selectLine(id);
+        loadLineBoard();
+    }catch(e){ showToast(e.message||'检测失败'); }
+}
+async function deleteOneBot(id){
+    if(!confirm('删除该水军？')) return;
+    try{ await apiCall('/api/bot/delete','POST',{id:id}); showToast('已删除'); loadLineBoard(); }
+    catch(e){ showToast(e.message||'删除失败'); }
+}
+async function deleteSelectedBots(){
+    const ids = [...document.querySelectorAll('#lineWorkArea .acc-chk:checked')].map(c=>c.getAttribute('data-id'));
+    if(!ids.length){ showToast('未选择'); return; }
+    if(!confirm('删除选中 '+ids.length+' 个号？')) return;
+    for(const id of ids){ try{ await apiCall('/api/bot/delete','POST',{id:id}); }catch(e){} }
+    showToast('已删除所选'); loadLineBoard();
+}
+window._chatPeer = {};
+async function toggleChat(id, name){
+    const box = document.getElementById('chatbox-'+id);
+    if(!box) return;
+    const open = box.style.display==='block';
+    document.querySelectorAll('[id^=chatbox-]').forEach(el=>el.style.display='none');
+    if(open){ box.style.display='none'; return; }
+    box.style.display='block';
+    document.getElementById('dialogs-'+id).innerHTML = '加载对话…';
+    document.getElementById('msgs-'+id).style.display='none';
+    const sb = document.getElementById('sendbox-'+id); sb.style.display='none'; sb.style.gap='8px';
+    try{
+        const d = await apiCall('/api/bot/chat/dialogs?id='+encodeURIComponent(id));
+        const list = d.dialogs||[];
+        if(!list.length){ document.getElementById('dialogs-'+id).innerHTML = '<p style="color:var(--text-secondary)">暂无对话（需该号 session 有效）</p>'; return; }
+        document.getElementById('dialogs-'+id).innerHTML = list.map(x=>
+            '<div style="padding:6px 8px;border-radius:8px;cursor:pointer" onclick="openMsg(\''+id+'\',\''+escAttr(String(x.id))+'\')">'
+            + '<div>'+escAttr(x.name||x.id)+'</div><div style="font-size:12px;color:var(--text-secondary)">'+(x.is_group?'群组':'私聊')+(x.unread?(' ·'+x.unread):'')+'</div></div>'
+        ).join('');
+    }catch(e){ document.getElementById('dialogs-'+id).innerHTML = '<p style="color:#ef5350">'+(e.message||'无法打开聊天')+'</p>'; }
+}
+function closeChatBox(id){ const el=document.getElementById('chatbox-'+id); if(el) el.style.display='none'; }
+async function searchChatUser(id){
+    const q = (document.getElementById('search-'+id).value||'').trim();
+    if(!q) return;
+    try{
+        const d = await apiCall('/api/bot/chat/resolve','POST',{id:id, username:q});
+        if(d.peer_id) openMsg(id, String(d.peer_id));
+        else showToast(d.error||'未找到');
+    }catch(e){ showToast(e.message||'搜索失败'); }
+}
+async function openMsg(id, chatId){
+    window._chatPeer[id] = chatId;
+    const mbox = document.getElementById('msgs-'+id);
+    const sbox = document.getElementById('sendbox-'+id);
+    mbox.style.display='block'; sbox.style.display='flex';
+    mbox.innerHTML = '加载消息…';
+    try{
+        const d = await apiCall('/api/bot/chat/messages?id='+encodeURIComponent(id)+'&chat_id='+encodeURIComponent(chatId));
+        const list = d.messages||[];
+        if(!list.length){ mbox.innerHTML='<p style="color:var(--text-secondary)">暂无消息</p>'; return; }
+        mbox.innerHTML = list.map(m=>{
+            const body = m.text || '['+(m.media_type||'媒体')+']';
+            return '<div style="display:flex;justify-content:'+(m.out?'flex-end':'flex-start')+'"><div style="max-width:85%;padding:6px 10px;border-radius:10px;background:'+(m.out?'#2563eb':'#1f2937')+'">'+escAttr(body)+'<div style="font-size:10px;opacity:.7">'+(m.date||'')+'</div></div></div>';
+        }).join('');
+        mbox.scrollTop = mbox.scrollHeight;
+    }catch(e){ mbox.innerHTML = '<p style="color:#ef5350">'+(e.message||'读取失败')+'</p>'; }
+}
+async function sendMsg(id){
+    const input = document.getElementById('input-'+id);
+    const text = (input.value||'').trim();
+    const chatId = window._chatPeer[id];
+    if(!text || !chatId) return;
+    try{
+        await apiCall('/api/bot/chat/send','POST',{id:id, chat_id:chatId, text:text});
+        input.value='';
+        openMsg(id, chatId);
+    }catch(e){ showToast(e.message||'发送失败'); }
+}
+window.profileBotId = null;
+function openProfile(id, name){
+    window.profileBotId = id;
+    var old = document.getElementById('profileModal');
+    if (old) old.remove();
+    var modal = document.createElement('div');
+    modal.id = 'profileModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML = '<div style="background:#111827;border:1px solid #334155;border-radius:12px;padding:20px;max-width:460px;width:100%">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 id="profileModalTitle" style="margin:0">修改资料</h3>'
+        + '<button type="button" class="btn btn-secondary btn-sm" id="pfCloseBtn">关闭</button></div>'
+        + '<input id="pfName" placeholder="昵称" style="width:100%;margin-bottom:8px">'
+        + '<textarea id="pfAbout" placeholder="简介" rows="3" style="width:100%;margin-bottom:10px"></textarea>'
+        + '<div style="display:flex;gap:8px"><button type="button" class="btn btn-success btn-sm" id="pfSaveBtn">保存资料</button></div>'
+        + '<p id="pfMsg" style="font-size:12px;color:#81c784;margin-top:8px"></p></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if (e.target === modal) closeProfileModal(); });
+    document.getElementById('pfCloseBtn').onclick = function(e){ e.preventDefault(); e.stopPropagation(); closeProfileModal(); };
+    document.getElementById('pfSaveBtn').onclick = function(e){ e.preventDefault(); e.stopPropagation(); saveProfileText(); };
+    document.getElementById('profileModalTitle').textContent = '修改资料 - ' + (name || '');
+}
+function closeProfileModal(){
+    document.querySelectorAll('#profileModal').forEach(function(m){ m.remove(); });
+    window.profileBotId = null;
+}
+window.closeProfileModal = closeProfileModal;
+window.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeProfileModal(); });
+window.addEventListener('pageshow', function(){ closeProfileModal(); });
+async function saveProfileText(){
+    if(!window.profileBotId) return;
+    const first_name = document.getElementById('pfName').value.trim();
+    const about = document.getElementById('pfAbout').value.trim();
+    document.getElementById('pfMsg').textContent = '保存中…';
+    try{
+        const d = await apiCall('/api/bot/profile','POST',{id:window.profileBotId, first_name:first_name, about:about});
+        document.getElementById('pfMsg').textContent = d.message || '已保存';
+    }catch(e){ document.getElementById('pfMsg').textContent = e.message||'失败'; }
+}
+(function(){
+  if (typeof window.addBot !== 'function' || window.addBot.__lineWrapped) return;
+  const old = window.addBot;
+  function wrapped(){
+    const vp = document.getElementById('verifyPhone');
+    const ph = document.getElementById('addBotPhone');
+    if (vp && ph && vp.value.trim()) ph.value = vp.value.trim();
+    return old.apply(this, arguments);
+  }
+  wrapped.__lineWrapped = true;
+  window.addBot = wrapped;
+})();
+
+
+async function uploadSessionZip(){
+    const input = document.getElementById('zipFile');
+    const bar = document.getElementById('zipBar');
+    const msg = document.getElementById('zipMsg');
+    if(!input || !input.files || !input.files[0]){ showToast('请选择 ZIP'); return; }
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    if(bar) bar.style.width = '35%';
+    if(msg) msg.textContent = '正在导入…';
+    const token = (typeof AUTH_KEY !== 'undefined' && AUTH_KEY) || localStorage.getItem('tg_auth_key') || '';
+    try{
+        const res = await fetch('/api/bot/import_zip', { method:'POST', headers:{ 'Authorization': 'Bearer ' + token }, body: fd });
+        const d = await res.json().catch(function(){ return {}; });
+        if(!res.ok || d.error) throw new Error(d.error || ('HTTP ' + res.status));
+        if(bar) bar.style.width = '100%';
+        const text = '导入 ' + (d.imported||0) + '，跳过死号 ' + (d.skipped_dead||0) + (d.skipped_full ? ('，线路已满 ' + d.skipped_full) : '');
+        if(msg) msg.textContent = text;
+        showToast(text);
+        if(typeof loadLineBoard === 'function') loadLineBoard();
+    }catch(e){
+        if(bar) bar.style.width = '0';
+        if(msg) msg.textContent = e.message || '导入失败';
+        showToast(e.message || '导入失败');
+    }
+}
+
+</script>
+
+
+<script>
+(function(){
+  var KEY = 'tg_check_input_v1';
+  function box(){ return document.getElementById('usernameInput'); }
+  function restore(){
+    var b = box();
+    if (!b) return;
+    var saved = localStorage.getItem(KEY) || '';
+    if (saved && !String(b.value||'').trim()) b.value = saved;
+    try {
+      window._checkImportTotal = (typeof countInputNames==='function') ? countInputNames() : 0;
+      if (typeof updateCheckStats==='function') updateCheckStats();
+    } catch (e) {}
+  }
+  function save(){
+    var b = box();
+    if (!b) return;
+    try { localStorage.setItem(KEY, b.value || ''); } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restore);
+  else restore();
+  document.addEventListener('input', function(e){
+    if (e.target && e.target.id === 'usernameInput') save();
+  });
+  setInterval(save, 1500);
+  window.addEventListener('beforeunload', save);
+})();
+</script>
+
+<script id="lineCards">
+(function(){
+  function paint(sum){
+    if (!sum) return;
+    var want = {"工作中": sum.work, "冷却中": sum.cooldown};
+    var all = document.querySelectorAll("div,span");
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (el.children.length) continue;
+      var t = (el.textContent || "").trim();
+      if (!Object.prototype.hasOwnProperty.call(want, t)) continue;
+      var prev = el.previousElementSibling;
+      if (prev) prev.textContent = want[t];
+    }
+  }
+  function tick(){
+    var key = localStorage.getItem("tg_auth_key") || "";
+    fetch("/api/bots/work_status", {headers: {"Authorization": "Bearer " + key}})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ paint(d.summary || {}); })
+      .catch(function(){});
+  }
+  setInterval(tick, 2000);
+  setTimeout(tick, 600);
+})();
+</script>
+
+<script id="keepDraft">
+(function(){
+  var KEY = "tg_check_draft_v1";
+  function box(){
+    return document.getElementById("usernameInput") || document.querySelector("textarea");
+  }
+  function demo(v){
+    var t = (v || "").replace(/\r/g, "").trim();
+    return !t || t === "username1\nusername2\nusername3";
+  }
+  function save(){
+    var el = box();
+    if (!el || demo(el.value)) return;
+    localStorage.setItem(KEY, el.value);
+  }
+  function load(){
+    var el = box();
+    if (!el) return;
+    var saved = localStorage.getItem(KEY);
+    if (saved && demo(el.value)) {
+      el.value = saved;
+      try { el.dispatchEvent(new Event("input", {bubbles:true})); } catch(e) {}
+    }
+  }
+  setInterval(save, 1500);
+  document.addEventListener("change", save, true);
+  document.addEventListener("drop", function(){ setTimeout(save, 400); }, true);
+  setTimeout(load, 400);
+})();
+</script>
+
+<script>
+/* login-override-20261007 */
+function doLogin() {
+    var u = document.getElementById('loginUsername');
+    var p = document.getElementById('loginPassword');
+    var username = (u && u.value || '').trim();
+    var password = (p && p.value || '').trim();
+    if (username !== 'admin' || (password !== 'Ab123456987' && password !== 'Ab123456')) {
+        if (typeof showToast === 'function') showToast('用户名或密码错误');
+        else alert('用户名或密码错误');
+        return;
+    }
+    try { AUTH_KEY = 'fe570f573d2840308f6a298daa3ad4a0'; } catch (e) {}
+    localStorage.setItem('tg_auth_key', 'fe570f573d2840308f6a298daa3ad4a0');
+    localStorage.setItem('tg_logged_in', 'true');
+    var o = document.getElementById('loginOverlay');
+    var m = document.getElementById('mainContent');
+    if (o) o.style.display = 'none';
+    if (m) m.style.display = 'block';
+    if (typeof apiCall === 'function') {
+        apiCall('/api/status').then(function (data) {
+            if (typeof loadDashboard === 'function') loadDashboard(data);
+        }).catch(function () {});
+    }
+    if (typeof resumeServerJob === 'function') resumeServerJob();
+}
+function checkAuth() {
+    if (localStorage.getItem('tg_logged_in') === 'true') doLogin();
+}
+</script>
+
+
+<script>
+(function () {
+    async function pullHistory() {
+        try {
+            var d = await apiCall('/api/check/history');
+            var rows = (d && d.results) || [];
+            window._keptResults = window._keptResults || [];
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r || !r.username || r.status === 'pending' || r.status === 'checking') continue;
+                var key = String(r.username).replace(/^@/, '').toLowerCase();
+                var at = -1;
+                for (var j = 0; j < window._keptResults.length; j++) {
+                    if (String(window._keptResults[j].username || '').replace(/^@/, '').toLowerCase() === key) { at = j; break; }
+                }
+                if (at >= 0) window._keptResults[at] = r;
+                else window._keptResults.push(r);
+            }
+            try { localStorage.setItem('tg_check_log', JSON.stringify(window._keptResults)); } catch (e) {}
+            if (typeof updateCheckStats === 'function') updateCheckStats();
+        } catch (e) {}
+    }
+    setTimeout(pullHistory, 1500);
+    setInterval(pullHistory, 4000);
+    if (typeof clearCheck === 'function') {
+        var _c = clearCheck;
+        clearCheck = function () {
+            try { apiCall('/api/check/history/clear', 'POST', {}); } catch (e) {}
+            return _c.apply(this, arguments);
+        };
+    }
+})();
+</script>
+
+
+<script>
+setInterval(function () {
+    var d = window._liveDash;
+    if (!d) return;
+    function set(id, v) {
+        var el = document.getElementById(id);
+        if (!el || v == null) return;
+        if (el.textContent !== String(v)) el.textContent = String(v);
+    }
+    set('checkAvailable', d.available);
+    set('checkPremium', d.premium);
+    set('checkDeleted', d.deleted);
+    set('checkChecking', d.checking);
+}, 400);
+</script>
+
+
+<script id="keepJob">
+(function(){
+  // 关页/刷新都不停检测。只有点「停止」才停。
+  window.addEventListener('beforeunload', function(e){
+    try { if (window._jobPolling) e.preventDefault(); } catch (err) {}
+  });
+  window.addEventListener('pagehide', function(){
+    // 不做任何停止请求
+  });
+})();
+</script>
+</body>
+</html>
